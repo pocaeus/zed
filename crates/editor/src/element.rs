@@ -2015,7 +2015,7 @@ impl Element<Editor> for EditorElement {
                     .folds
                     .ellipses
                     .background
-                    .style_for(&mut cx.mouse_state::<FoldMarkers>(id as usize), false)
+                    .style_for(&mut cx.mouse_state::<FoldMarkers>(id as usize))
                     .color;
 
                 (id, fold, color)
@@ -2710,7 +2710,7 @@ fn render_excerpt_header(
 
         enum JumpIcon {}
         MouseEventHandler::<JumpIcon, _>::new(id.into(), cx, |state, _| {
-            let style = editor_style.jump_icon.style_for(state, false);
+            let style = editor_style.jump_icon.style_for(state);
             Svg::new("icons/arrow_up_right_8.svg")
                 .with_color(style.color)
                 .constrained()
