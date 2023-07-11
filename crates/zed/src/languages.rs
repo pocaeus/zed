@@ -137,6 +137,7 @@ pub fn init(languages: Arc<LanguageRegistry>, node_runtime: Arc<NodeRuntime>) {
         tree_sitter_yaml::language(),
         vec![Arc::new(yaml::YamlLspAdapter::new(node_runtime))],
     );
+    language("kotlin", tree_sitter_kotlin::language(), vec![]);
 }
 
 #[cfg(any(test, feature = "test-support"))]

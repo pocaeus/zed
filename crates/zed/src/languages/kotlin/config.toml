@@ -1,0 +1,9 @@
+name = "Kotlin"
+path_suffixes = ["kt"]
+line_comment = "// "
+autoclose_before = "])"
+brackets = [
+    { start = "[", end = "]", close = true, newline = false },
+    { start = "(", end = ")", close = true, newline = false },
+    { start = "{", end = "}", close = true, newline = true },
+]

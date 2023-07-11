@@ -7986,6 +7986,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tree-sitter-kotlin"
+version = "0.2.11"
+source = "git+https://github.com/fwcd/tree-sitter-kotlin.git#2878163ee7cad7eaebd3df1729e86610891fe0ee"
+dependencies = [
+ "cc",
+ "tree-sitter",
+]
+
+[[package]]
 name = "tree-sitter-lua"
 version = "0.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9430,6 +9439,7 @@ dependencies = [
  "tree-sitter-heex",
  "tree-sitter-html",
  "tree-sitter-json 0.20.0",
+ "tree-sitter-kotlin",
  "tree-sitter-lua",
  "tree-sitter-markdown",
  "tree-sitter-python",
