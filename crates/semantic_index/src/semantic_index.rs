@@ -38,7 +38,7 @@ use util::{
 };
 use workspace::Workspace;
 
-const SEMANTIC_INDEX_VERSION: usize = 6;
+const SEMANTIC_INDEX_VERSION: usize = 7;
 const EMBEDDINGS_BATCH_SIZE: usize = 80;
 
 actions!(semantic_index, [IndexProject]);

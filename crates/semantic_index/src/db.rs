@@ -132,6 +132,7 @@ impl VectorDatabase {
                 end_byte INTEGER NOT NULL,
                 name VARCHAR NOT NULL,
                 embedding BLOB NOT NULL,
+                token_count INTEGER NOT NULL,
                 FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE
             )",
             [],
@@ -163,6 +164,7 @@ impl VectorDatabase {
             ",
             params![worktree_id, path.to_str()],
         )?;
+
         let mtime = Timestamp::from(mtime);
         self.db.execute(
             "
@@ -171,7 +173,7 @@ impl VectorDatabase {
             VALUES
             (?1, ?2, $3, $4);
             ",
-            params![worktree_id, path.to_str(), mtime.seconds, mtime.nanos],
+            params![worktree_id, path.to_str(), mtime.seconds, mtime.nanos,],
         )?;
 
         let file_id = self.db.last_insert_rowid();
@@ -179,16 +181,18 @@ impl VectorDatabase {
         // Currently inserting at approximately 3400 documents a second
         // I imagine we can speed this up with a bulk insert of some kind.
         for document in documents {
+            let token_count = document.token_count.min(8190);
             let embedding_blob = bincode::serialize(&document.embedding)?;
 
             self.db.execute(
-                "INSERT INTO documents (file_id, start_byte, end_byte, name, embedding) VALUES (?1, ?2, ?3, ?4, $5)",
+                "INSERT INTO documents (file_id, start_byte, end_byte, name, embedding, token_count) VALUES (?1, ?2, ?3, ?4, $5, $6)",
                 params![
                     file_id,
                     document.range.start.to_string(),
                     document.range.end.to_string(),
                     document.name,
-                    embedding_blob
+                    embedding_blob,
+                    token_count
                 ],
             )?;
         }

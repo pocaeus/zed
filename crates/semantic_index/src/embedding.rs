@@ -16,7 +16,7 @@ use util::http::{HttpClient, Request};
 
 lazy_static! {
     static ref OPENAI_API_KEY: Option<String> = env::var("OPENAI_API_KEY").ok();
-    static ref OPENAI_BPE_TOKENIZER: CoreBPE = cl100k_base().unwrap();
+    pub static ref OPENAI_BPE_TOKENIZER: CoreBPE = cl100k_base().unwrap();
 }
 
 #[derive(Clone)]
