@@ -11,7 +11,10 @@ use anyhow::{anyhow, Result};
 use db::VectorDatabase;
 use embedding::{EmbeddingProvider, OpenAIEmbeddings};
 use futures::{channel::oneshot, Future};
-use gpui::{AppContext, AsyncAppContext, Entity, ModelContext, ModelHandle, Task, WeakModelHandle};
+use gpui::{
+    actions, AppContext, AsyncAppContext, Entity, ModelContext, ModelHandle, Task, ViewContext,
+    WeakModelHandle,
+};
 use language::{Anchor, Buffer, Language, LanguageRegistry};
 use parking_lot::Mutex;
 use parsing::{CodeContextRetriever, Document, PARSEABLE_ENTIRE_FILE_TYPES};
@@ -33,10 +36,12 @@ use util::{
     paths::EMBEDDINGS_DIR,
     ResultExt,
 };
+use workspace::Workspace;
 
 const SEMANTIC_INDEX_VERSION: usize = 6;
 const EMBEDDINGS_BATCH_SIZE: usize = 80;
 
+actions!(semantic_index, [IndexProject]);
 pub fn init(
     fs: Arc<dyn Fs>,
     http_client: Arc<dyn HttpClient>,
@@ -53,6 +58,17 @@ pub fn init(
     if *RELEASE_CHANNEL == ReleaseChannel::Stable {
         return;
     }
+
+    cx.add_action(
+        |workspace: &mut Workspace, _: &IndexProject, mut cx: &mut ViewContext<_>| {
+            let project = workspace.project();
+            SemanticIndex::global(cx).map(|index| {
+                index.update(cx, |this, cx| {
+                    this.index_project(project.clone(), cx).detach()
+                });
+            });
+        },
+    );
 
     cx.spawn(move |mut cx| async move {
         let semantic_index = SemanticIndex::new(
