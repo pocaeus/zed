@@ -67,6 +67,7 @@ members = [
     "crates/terminal",
     "crates/text",
     "crates/theme",
+    "crates/theme_generator",
     "crates/theme_selector",
     "crates/util",
     "crates/semantic_index",

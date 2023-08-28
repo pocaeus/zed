@@ -1,0 +1,12 @@
+[package]
+name = "theme_generator"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+theme = {path = "../theme"}
+serde_json.workspace = true
+anyhow.workspace = true
+colorgrad = "0.6.2"
