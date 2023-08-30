@@ -21,8 +21,15 @@ mod tests {
         let grad = colorgrad::CustomGradient::new()
             .colors(&colors)
             .domain(&[0., 0.15, 0.25, 0.35, 0.7, 0.8, 0.9, 1.])
+            .mode(colorgrad::BlendMode::Oklab)
             .build()
             .unwrap();
-        panic!("{:?}", grad.colors(10));
+        panic!(
+            "{:?}",
+            grad.colors(10)
+                .iter()
+                .map(colorgrad::Color::to_hex_string)
+                .collect::<Vec<_>>()
+        );
     }
 }
