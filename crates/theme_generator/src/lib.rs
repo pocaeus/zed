@@ -1,10 +1,52 @@
 mod themes;
 
+use anyhow::anyhow;
 use anyhow::Result;
 pub fn build_themes() -> Result<Vec<theme::Theme>> {
     todo!();
 }
 
+enum ThemeLicenseType {
+    MIT,
+    Apache2,
+    Other(String),
+}
+
+enum ThemeAppearance {
+    Light,
+    Dark,
+}
+impl From<&str> for ThemeLicenseType {
+    fn from(input: &str) -> Self {
+        match input {
+            "MIT" => Self::MIT,
+            "Apache License 2.0" => Self::Apache2,
+            _ => Self::Other(input.to_owned()),
+        }
+    }
+}
+
+struct ThemeMeta {
+    /** The name of the theme */
+    name: String,
+    /** The theme's appearance. Either `light` or `dark`. */
+    appearance: ThemeAppearance,
+    /** The author of the theme
+     *
+     * Ideally formatted as `Full Name <email>`
+     *
+     * Example: `John Doe <john@doe.com>`
+     */
+    author: String,
+    /** SPDX License string
+     *
+     * Example: `MIT`
+     */
+    license_type: ThemeLicenseType,
+    license_url: String,
+    license_file: String,
+    theme_url: String,
+}
 #[cfg(test)]
 mod tests {
     use colorgrad::Color;
