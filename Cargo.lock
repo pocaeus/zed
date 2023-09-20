@@ -1938,19 +1938,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crash-handler"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c43ddb8d457c6c6c6d0ebeeadb3b3f4b246c39ed83b0d3393f91bf06a5b79b05"
-dependencies = [
- "cfg-if 1.0.0",
- "crash-context",
- "libc",
- "mach2",
- "parking_lot 0.12.1",
-]
-
-[[package]]
 name = "crc"
 version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4505,24 +4492,6 @@ dependencies = [
  "scroll",
  "tempfile",
  "thiserror",
-]
-
-[[package]]
-name = "minidumper"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "261916bd44ec98562f8573f5e882ca08b1fea717b20bee95b6b39ad024869f97"
-dependencies = [
- "cfg-if 1.0.0",
- "crash-context",
- "libc",
- "log",
- "minidump-writer",
- "parking_lot 0.12.1",
- "polling",
- "scroll",
- "thiserror",
- "uds",
 ]
 
 [[package]]
@@ -8815,15 +8784,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed646292ffc8188ef8ea4d1e0e0150fb15a5c2e12ad9b8fc191ae7a8a7f3c4b9"
 
 [[package]]
-name = "uds"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26095fa6d0208163cb66162d4b016c8f273226af3191ce651d6482ca760c31e7"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "unicase"
 version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10042,7 +10002,6 @@ dependencies = [
  "context_menu",
  "copilot",
  "copilot_button",
- "crash-handler",
  "ctor",
  "db",
  "diagnostics",
@@ -10070,7 +10029,7 @@ dependencies = [
  "libc",
  "log",
  "lsp",
- "minidumper",
+ "minidump-writer",
  "node_runtime",
  "num_cpus",
  "outline",
