@@ -720,6 +720,7 @@ impl ProjectSearchView {
     }
 
     fn activate_search_mode(&mut self, mode: SearchMode, cx: &mut ViewContext<Self>) {
+        panic!("Ayy");
         let previous_mode = self.current_mode;
         if previous_mode == mode {
             return;

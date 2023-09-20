@@ -133,7 +133,10 @@ tree-sitter-yaml.workspace = true
 tree-sitter-lua.workspace = true
 tree-sitter-nix.workspace = true
 tree-sitter-nu.workspace = true
-
+minidumper = "0.8"
+crash-handler = "0.6"
+pretty_env_logger = "0.4.0"
+# uuid generation
 url = "2.2"
 urlencoding = "2.1.2"
 uuid = { version = "1.1.2", features = ["v4"] }
