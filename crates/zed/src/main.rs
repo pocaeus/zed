@@ -448,8 +448,11 @@ fn init_panic_hook(app: &App, installation_id: Option<String>) {
             //     backtrace,
             // );
             let mut writer = minidump_writer::minidump_writer::MinidumpWriter::new(None, None);
+            let uuid = uuid::Uuid::new_v4();
+            let dump_path = std::path::PathBuf::from(format!("dumps/{uuid}.dmp"));
+            println!("{:?}", &dump_path);
             let mut minidump_file =
-                std::fs::File::create("example_dump.mdmp").expect("failed to create file");
+                std::fs::File::create(dump_path).expect("failed to create file");
             writer
                 .dump(&mut minidump_file)
                 .expect("failed to write minidump");
