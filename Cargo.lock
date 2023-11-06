@@ -1903,7 +1903,7 @@ dependencies = [
  "async-tar",
  "clock",
  "collections",
- "fs",
+ "fs2",
  "futures 0.3.28",
  "gpui2",
  "language2",
@@ -1911,12 +1911,12 @@ dependencies = [
  "lsp2",
  "node_runtime",
  "parking_lot 0.11.2",
- "rpc",
+ "rpc2",
  "serde",
  "serde_derive",
  "settings2",
  "smol",
- "theme",
+ "theme2",
  "util",
 ]
 
@@ -6007,6 +6007,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "picker2"
+version = "0.1.0"
+dependencies = [
+ "ctor",
+ "editor2",
+ "env_logger 0.9.3",
+ "gpui2",
+ "menu2",
+ "parking_lot 0.11.2",
+ "serde_json",
+ "settings2",
+ "theme2",
+ "util",
+ "workspace2",
+]
+
+[[package]]
 name = "pico-args"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9017,6 +9034,26 @@ dependencies = [
  "theme",
  "util",
  "workspace",
+]
+
+[[package]]
+name = "theme_selector2"
+version = "0.1.0"
+dependencies = [
+ "editor2",
+ "feature_flags",
+ "fs2",
+ "fuzzy2",
+ "gpui2",
+ "log",
+ "parking_lot 0.11.2",
+ "picker",
+ "postage",
+ "settings2",
+ "smol",
+ "theme2",
+ "util",
+ "workspace2",
 ]
 
 [[package]]
