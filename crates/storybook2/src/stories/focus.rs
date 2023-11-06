@@ -44,6 +44,8 @@ impl Render for FocusStory {
         let child_1 = cx.focus_handle();
         let child_2 = cx.focus_handle();
 
+        cx.focus(&child_1);
+
         div()
             .id("parent")
             .focusable()
