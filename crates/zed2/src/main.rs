@@ -47,8 +47,8 @@ use util::{
 use uuid::Uuid;
 use workspace::{AppState, WorkspaceStore};
 use zed2::{
-    build_window_options, ensure_only_instance, handle_cli_connection, initialize_workspace,
-    languages, Assets, IsOnlyInstance, OpenListener, OpenRequest,
+    build_window_options, ensure_only_instance, handle_cli_connection, handle_keymap_file_changes,
+    initialize_workspace, languages, Assets, IsOnlyInstance, OpenListener, OpenRequest,
 };
 
 mod open_listener;
@@ -75,7 +75,7 @@ fn main() {
         fs.clone(),
         paths::SETTINGS.clone(),
     );
-    let _user_keymap_file_rx = watch_config_file(
+    let user_keymap_file_rx = watch_config_file(
         &app.background_executor(),
         fs.clone(),
         paths::KEYMAP.clone(),
@@ -115,7 +115,7 @@ fn main() {
             .unwrap();
         cx.set_global(store);
         handle_settings_file_changes(user_settings_file_rx, cx);
-        // handle_keymap_file_changes(user_keymap_file_rx, cx);
+        handle_keymap_file_changes(user_keymap_file_rx, cx);
 
         let client = client::Client::new(http.clone(), cx);
         let mut languages = LanguageRegistry::new(login_shell_env_loaded);

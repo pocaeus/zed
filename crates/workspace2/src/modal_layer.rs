@@ -28,10 +28,6 @@ struct ToggleModal {
     name: String,
 }
 
-// complete change of plan?
-// on_action(ToggleModal{ name})
-// register_modal(name, |workspace, cx| { ... })
-
 impl ModalRegistry {
     pub fn register_modal<A: 'static, V, B>(&mut self, action: A, build_view: B)
     where
@@ -40,12 +36,10 @@ impl ModalRegistry {
     {
         let build_view = Arc::new(build_view);
 
-        dbg!("yonder");
         self.registered_modals.push((
             TypeId::of::<A>(),
             Box::new(move |mut div| {
                 let build_view = build_view.clone();
-                dbg!("this point");
 
                 div.on_action(
                     move |workspace: &mut Workspace,
@@ -76,8 +70,6 @@ impl ModalLayer {
     }
 
     pub fn render(&self, cx: &ViewContext<Workspace>) -> impl Component<Workspace> {
-        dbg!("rendering ModalLayer");
-
         let mut div = div();
 
         // div, c workspace.toggle_modal()div.on_action()) {

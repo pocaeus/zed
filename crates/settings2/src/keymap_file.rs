@@ -137,8 +137,12 @@ impl KeymapFile {
     }
 }
 
+#[derive(PartialEq, Clone, Default, Deserialize)]
+struct NoAction {}
+
 fn no_action() -> Box<dyn gpui::Action> {
-    todo!()
+    println!("warning: no valid action");
+    Box::new(NoAction {})
 }
 
 #[cfg(test)]

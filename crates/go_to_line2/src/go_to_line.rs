@@ -7,6 +7,7 @@ use workspace::ModalRegistry;
 struct Toggle;
 
 pub fn init(cx: &mut AppContext) {
+    cx.register_action_type::<Toggle>();
     cx.global_mut::<ModalRegistry>()
         .register_modal(Toggle, |_, cx| {
             // if let Some(editor) = workspace

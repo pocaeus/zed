@@ -46,6 +46,7 @@ impl KeyMatcher {
         keystroke: &Keystroke,
         context_stack: &[&DispatchContext],
     ) -> KeyMatch {
+        dbg!(keystroke);
         let keymap = self.keymap.lock();
         // Clear pending keystrokes if the keymap has changed since the last matched keystroke.
         if keymap.version() != self.keymap_version {
@@ -60,6 +61,7 @@ impl KeyMatcher {
                 self.pending_keystrokes.push(candidate.clone());
                 match binding.match_keystrokes(&self.pending_keystrokes, context_stack) {
                     KeyMatch::Some(action) => {
+                        dbg!("yay", self.pending_keystrokes.clone());
                         self.pending_keystrokes.clear();
                         return KeyMatch::Some(action);
                     }

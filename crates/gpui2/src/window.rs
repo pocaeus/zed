@@ -79,6 +79,12 @@ pub struct FocusHandle {
     handles: Arc<RwLock<SlotMap<FocusId, AtomicUsize>>>,
 }
 
+impl Debug for FocusHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.id.fmt(f)
+    }
+}
+
 impl FocusHandle {
     pub(crate) fn new(handles: &Arc<RwLock<SlotMap<FocusId, AtomicUsize>>>) -> Self {
         let id = handles.write().insert(AtomicUsize::new(1));
@@ -376,6 +382,7 @@ impl<'a> WindowContext<'a> {
 
     /// Move focus to the element associated with the given `FocusHandle`.
     pub fn focus(&mut self, handle: &FocusHandle) {
+        dbg!("FOCUS", handle.id);
         if self.window.last_blur.is_none() {
             self.window.last_blur = Some(self.window.focus);
         }
@@ -390,6 +397,7 @@ impl<'a> WindowContext<'a> {
 
     /// Remove focus from all elements within this context's window.
     pub fn blur(&mut self) {
+        dbg!("BLUR");
         if self.window.last_blur.is_none() {
             self.window.last_blur = Some(self.window.focus);
         }
@@ -1151,9 +1159,12 @@ impl<'a> WindowContext<'a> {
                     .insert(any_mouse_event.type_id(), handlers);
             }
         } else if let Some(any_key_event) = event.keyboard_event() {
+            dbg!(&any_key_event);
             let key_dispatch_stack = mem::take(&mut self.window.key_dispatch_stack);
             let key_event_type = any_key_event.type_id();
             let mut context_stack = SmallVec::<[&DispatchContext; 16]>::new();
+            dbg!(context_stack.len());
+            dbg!(key_dispatch_stack.len());
 
             for (ix, frame) in key_dispatch_stack.iter().enumerate() {
                 match frame {
@@ -1161,6 +1172,7 @@ impl<'a> WindowContext<'a> {
                         event_type,
                         listener,
                     } => {
+                        dbg!("listener");
                         if key_event_type == *event_type {
                             if let Some(action) = listener(
                                 any_key_event,
@@ -1176,6 +1188,7 @@ impl<'a> WindowContext<'a> {
                         }
                     }
                     KeyDispatchStackFrame::Context(context) => {
+                        dbg!(&context);
                         context_stack.push(&context);
                     }
                 }
@@ -1224,6 +1237,7 @@ impl<'a> WindowContext<'a> {
         keystroke: &Keystroke,
         context_stack: &[&DispatchContext],
     ) -> KeyMatch {
+        dbg!("match keystroke");
         let key_match = self
             .window
             .key_matchers
@@ -1931,7 +1945,10 @@ impl<'a, V: 'static> ViewContext<'a, V> {
         }
         self.window.focus_stack.push(focus_handle.id);
 
+        dbg!(self.window.focus);
+
         if Some(focus_handle.id) == self.window.focus {
+            dbg!("FOCUSED HANDLE");
             self.window.freeze_key_dispatch_stack = true;
         }
 

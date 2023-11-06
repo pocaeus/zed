@@ -763,6 +763,7 @@ impl AppContext {
 
     /// Register an action type to allow it to be referenced in keymaps.
     pub fn register_action_type<A: Action>(&mut self) {
+        dbg!(A::qualified_name());
         self.action_builders.insert(A::qualified_name(), A::build);
     }
 

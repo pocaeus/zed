@@ -2119,7 +2119,6 @@ impl Element<Editor> for EditorElement {
         // Add 1 to ensure selections bleed off screen
         let end_row = 1 + cmp::min((scroll_position.y + height_in_lines).ceil() as u32, max_row);
 
-        dbg!(start_row..end_row);
         // let text_style = cx.text_style();
         // let layout_text = cx.text_system().layout_text(
         //     "hello world",

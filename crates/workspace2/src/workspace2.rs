@@ -37,10 +37,11 @@ use futures::{
 };
 use gpui::{
     div, point, size, AnyModel, AnyView, AnyWeakView, AppContext, AsyncAppContext,
-    AsyncWindowContext, Bounds, Component, Div, Entity, EntityId, EventEmitter, FocusHandle,
-    GlobalPixels, Model, ModelContext, ParentElement, Point, Render, Size, StatefulInteractive,
-    Styled, Subscription, Task, View, ViewContext, VisualContext, WeakView, WindowBounds,
-    WindowContext, WindowHandle, WindowOptions,
+    AsyncWindowContext, Bounds, Component, Div, Entity, EntityId, EventEmitter, FocusEnabled,
+    FocusHandle, GlobalPixels, Model, ModelContext, ParentElement, Point, Render, Size,
+    StatefulInteraction, StatefulInteractive, StatelessInteractive, Styled, Subscription, Task,
+    View, ViewContext, VisualContext, WeakView, WindowBounds, WindowContext, WindowHandle,
+    WindowOptions,
 };
 use item::{FollowableItem, FollowableItemHandle, Item, ItemHandle, ItemSettings, ProjectItem};
 use itertools::Itertools;
@@ -747,7 +748,7 @@ impl Workspace {
         ];
 
         cx.defer(|this, cx| this.update_window_title(cx));
-        Workspace {
+        let workspace = Workspace {
             weak_self: weak_handle.clone(),
             focus_handle: cx.focus_handle(),
             zoomed: None,
@@ -778,7 +779,11 @@ impl Workspace {
             leader_updates_tx,
             subscriptions,
             pane_history_timestamp,
-        }
+        };
+        cx.focus(&workspace.focus_handle);
+        dbg!(&workspace.focus_handle);
+
+        workspace
     }
 
     fn new_local(
@@ -3691,11 +3696,12 @@ impl EventEmitter for Workspace {
 }
 
 impl Render for Workspace {
-    type Element = Div<Self>;
+    type Element = Div<Self, StatefulInteraction<Workspace>, FocusEnabled<Workspace>>;
 
     fn render(&mut self, cx: &mut ViewContext<Self>) -> Self::Element {
         div()
             .relative()
+            .track_focus(&self.focus_handle)
             .size_full()
             .flex()
             .flex_col()
@@ -3705,6 +3711,9 @@ impl Render for Workspace {
             .items_start()
             .text_color(cx.theme().colors().text)
             .bg(cx.theme().colors().background)
+            .on_key_down(|this, event, phase, cx| {
+                dbg!("key down", &event);
+            })
             .child(self.render_titlebar(cx))
             .child(
                 div()

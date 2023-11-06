@@ -1185,13 +1185,15 @@ impl Pane {
     }
 
     pub fn focus(&mut self, cx: &mut ViewContext<Pane>) {
-        cx.focus(&self.focus_handle);
+        // todo!()
+        // cx.focus(&self.focus_handle);
     }
 
     pub fn focus_active_item(&mut self, cx: &mut ViewContext<Self>) {
         if let Some(active_item) = self.active_item() {
             let focus_handle = active_item.focus_handle(cx);
-            cx.focus(&focus_handle);
+            // todo!()
+            // cx.focus(&focus_handle);
         }
     }
 
