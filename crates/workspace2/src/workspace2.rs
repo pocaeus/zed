@@ -81,25 +81,25 @@ lazy_static! {
         .and_then(parse_pixel_position_env_var);
 }
 
-// pub trait Modal: View {
-//     fn has_focus(&self) -> bool;
-//     fn dismiss_on_event(event: &Self::Event) -> bool;
-// }
+pub trait Modal<V>: Component<V> + EventEmitter {
+    fn has_focus(&self) -> bool;
+    fn dismiss_on_event(event: &Self::Event) -> bool;
+}
 
-// trait ModalHandle {
-//     fn as_any(&self) -> &AnyViewHandle;
-//     fn has_focus(&self, cx: &WindowContext) -> bool;
-// }
+trait ModalHandle {
+    fn as_any(&self) -> &AnyView;
+    fn has_focus(&self, cx: &WindowContext) -> bool;
+}
 
-// impl<T: Modal> ModalHandle for View<T> {
-//     fn as_any(&self) -> &AnyViewHandle {
-//         self
-//     }
-
-//     fn has_focus(&self, cx: &WindowContext) -> bool {
-//         self.read(cx).has_focus()
-//     }
-// }
+impl<T: Modal<T>> ModalHandle for View<T> {
+    fn as_any(&self) -> &AnyView {
+        &AnyView::from(self)
+        // self.into()
+    }
+    fn has_focus(&self, cx: &WindowContext) -> bool {
+        self.read(cx).has_focus()
+    }
+}
 
 // #[derive(Clone, PartialEq)]
 // pub struct RemoveWorktreeFromProject(pub WorktreeId);
