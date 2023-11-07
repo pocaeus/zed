@@ -390,7 +390,10 @@ pub trait ElementInteraction<V: 'static>: 'static {
                             if let KeyMatch::Some(action) =
                                 cx.match_keystroke(&global_id, &key_down.keystroke, context)
                             {
+                                dbg!("got something!");
                                 return Some(action);
+                            } else {
+                                dbg!("didn't get something!");
                             }
                         }
 
