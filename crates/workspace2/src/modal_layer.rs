@@ -1,14 +1,25 @@
 use std::{any::TypeId, sync::Arc};
 
 use gpui::{
-    div, AnyView, AppContext, Component, DispatchPhase, Div, ParentElement, Render,
+    div, AnyView, AppContext, Component, DispatchPhase, Div, Element, ParentElement, Render,
     StatelessInteractive, View, ViewContext,
 };
 
 use crate::Workspace;
 
 pub struct ModalRegistry {
-    registered_modals: Vec<(TypeId, Box<dyn Fn(Div<Workspace>) -> Div<Workspace>>)>,
+    registered_modals: Vec<(
+        TypeId,
+        Box<
+            dyn Fn(
+                Div<Workspace, gpui::StatefulInteraction<Workspace>, gpui::FocusEnabled<Workspace>>,
+            ) -> Div<
+                Workspace,
+                gpui::StatefulInteraction<Workspace>,
+                gpui::FocusEnabled<Workspace>,
+            >,
+        >,
+    )>,
 }
 
 pub trait Modal {}
@@ -69,8 +80,12 @@ impl ModalLayer {
         Self { open_modal: None }
     }
 
-    pub fn render(&self, cx: &ViewContext<Workspace>) -> impl Component<Workspace> {
-        let mut div = div();
+    pub fn render(
+        &self,
+        workspace: &Workspace,
+        cx: &ViewContext<Workspace>,
+    ) -> impl Component<Workspace> {
+        let mut div = div().id("foo").track_focus(&workspace.focus_handle);
 
         // div, c workspace.toggle_modal()div.on_action()) {
         //

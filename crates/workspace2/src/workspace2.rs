@@ -3696,12 +3696,15 @@ impl EventEmitter for Workspace {
 }
 
 impl Render for Workspace {
-    type Element = Div<Self, StatefulInteraction<Workspace>, FocusEnabled<Workspace>>;
+    // type Element = Div<Self, StatefulInteraction<Workspace>, FocusEnabled<Workspace>>;
+    type Element = Div<Self>;
 
     fn render(&mut self, cx: &mut ViewContext<Self>) -> Self::Element {
         div()
-            .relative()
-            .track_focus(&self.focus_handle)
+            // .id("workspace")
+            // .relative()
+            // // .focusable()
+            // .track_focus(&self.focus_handle)
             .size_full()
             .flex()
             .flex_col()
@@ -3850,7 +3853,7 @@ impl Render for Workspace {
                               // ),
             )
             //     .child(self.modal_layer.clone())
-            .child(self.modal_layer.read(cx).render(cx))
+            .child(self.modal_layer.read(cx).render(self, cx))
     }
 }
 
