@@ -1,15 +1,11 @@
-use gpui::{
-    actions, div, px, red, AppContext, Div, ParentElement, Render, Styled, ViewContext,
-    VisualContext,
-};
-use ui::modal;
 use editor::{scroll::autoscroll::Autoscroll, Editor};
 use gpui::{
-    actions, div, px, red, AppContext, Div, EventEmitter, ParentElement, Render, Styled, View,
-    ViewContext, VisualContext,
+    actions, div, px, red, rems, AppContext, BorrowAppContext, Div, EventEmitter, ParentElement,
+    Render, SharedString, Styled, TextStyleRefinement, View, ViewContext, VisualContext,
 };
 use text::{Bias, Point};
-use ui::modal;
+use theme::ActiveTheme;
+use ui::{h_stack, modal, v_stack, Label, LabelColor};
 use util::paths::FILE_ROW_COLUMN_DELIMITER;
 use workspace::ModalRegistry;
 
@@ -46,9 +42,15 @@ impl EventEmitter for GoToLine {
 
 impl GoToLine {
     pub fn new(active_editor: View<Editor>, cx: &mut ViewContext<Self>) -> Self {
-        let line_editor = cx.build_view(|cx| Editor::single_line(cx));
+        let line_editor = cx.build_view(|cx| {
+            let mut editor = Editor::single_line(cx);
+            editor.set_placeholder_text("Find something", cx);
+            editor
+        });
         cx.subscribe(&line_editor, Self::on_line_editor_event)
             .detach();
+
+        let editor = active_editor.read(cx);
 
         Self {
             line_editor,
@@ -114,13 +116,41 @@ impl GoToLine {
 
         cx.emit(Event::Dismissed);
     }
+
+    fn status_text(&self) -> SharedString {
+        "Default text".into()
+    }
 }
 
 impl Render for GoToLine {
     type Element = Div<Self>;
 
     fn render(&mut self, cx: &mut ViewContext<Self>) -> Self::Element {
-        modal(cx).child(self.line_editor.clone()).child("blah blah")
+        modal(cx).w_96().child(
+            v_stack()
+                .px_1()
+                .pt_0p5()
+                .gap_px()
+                .child(
+                    v_stack()
+                        .py_0p5()
+                        .px_1()
+                        .child(div().px_1().py_0p5().child(self.line_editor.clone())),
+                )
+                .child(
+                    div()
+                        .h_px()
+                        .w_full()
+                        .bg(cx.theme().colors().element_background),
+                )
+                .child(
+                    h_stack()
+                        .justify_between()
+                        .px_2()
+                        .py_1()
+                        .child(Label::new(self.status_text()).color(LabelColor::Muted)),
+                ),
+        )
     }
 }
 
