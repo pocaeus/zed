@@ -4,15 +4,15 @@ use crate::{
 };
 use anyhow::{anyhow, Result};
 use parking_lot::Mutex;
-use std::{rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 pub struct TestPlatform {
     background_executor: BackgroundExecutor,
     foreground_executor: ForegroundExecutor,
 
-    active_window: Arc<Mutex<Option<AnyWindowHandle>>>,
-    active_display: Rc<dyn PlatformDisplay>,
-    active_cursor: Mutex<CursorStyle>,
+    pub(crate) active_window: Arc<Mutex<Option<TestWindow>>>,
+    pub(crate) active_display: Rc<dyn PlatformDisplay>,
+    pub(crate) active_cursor: RefCell<CursorStyle>,
 }
 
 impl TestPlatform {
@@ -25,6 +25,10 @@ impl TestPlatform {
             active_display: Rc::new(TestDisplay::new()),
             active_window: Default::default(),
         }
+    }
+
+    pub async fn reveal(&self) {
+        self.active_window.lock().clone().unwrap().reveal().await
     }
 }
 
@@ -87,8 +91,9 @@ impl Platform for TestPlatform {
         handle: AnyWindowHandle,
         options: WindowOptions,
     ) -> Box<dyn crate::PlatformWindow> {
-        *self.active_window.lock() = Some(handle);
-        Box::new(TestWindow::new(options, self.active_display.clone()))
+        let window = TestWindow::new(options, handle, self.active_display.clone());
+        self.active_window.lock().replace(window.clone());
+        Box::new(window)
     }
 
     fn set_display_link_output_callback(
@@ -178,7 +183,7 @@ impl Platform for TestPlatform {
     }
 
     fn set_cursor_style(&self, style: crate::CursorStyle) {
-        *self.active_cursor.lock() = style;
+        *self.active_cursor.borrow_mut() = style;
     }
 
     fn should_auto_hide_scrollbars(&self) -> bool {

@@ -1,4 +1,4 @@
-use crate::TestDispatcher;
+use crate::{current_platform, TestDispatcher};
 use rand::prelude::*;
 use std::{
     env,
@@ -12,6 +12,11 @@ pub fn run_test(
     on_fail_fn: Option<fn()>,
     _fn_name: String, // todo!("re-enable fn_name")
 ) {
+    let platform = current_platform();
+    dbg!("hi");
+    platform.run(Box::new(move || {
+        dbg!("hi");
+    }));
     let starting_seed = env::var("SEED")
         .map(|seed| seed.parse().expect("invalid SEED variable"))
         .unwrap_or(0);

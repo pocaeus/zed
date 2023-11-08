@@ -1267,7 +1267,7 @@ mod test {
     }
 
     #[gpui::test]
-    fn test_on_events(cx: &mut TestAppContext) {
+    async fn test_on_events(cx: &mut TestAppContext) {
         let window = cx.update(|cx| {
             cx.open_window(Default::default(), |cx| {
                 cx.build_view(|cx| TestView {
@@ -1288,6 +1288,8 @@ mod test {
 
         cx.dispatch_keystroke(*window, Keystroke::parse("space").unwrap(), false);
         cx.dispatch_keystroke(*window, Keystroke::parse("ctrl-g").unwrap(), false);
+
+        cx.reveal().await;
 
         window
             .update(cx, |test_view, _| {

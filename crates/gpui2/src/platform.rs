@@ -308,7 +308,7 @@ pub trait PlatformInputHandler {
     fn bounds_for_range(&self, range_utf16: Range<usize>) -> Option<Bounds<f32>>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WindowOptions {
     pub bounds: WindowBounds,
     pub titlebar: Option<TitlebarOptions>,
@@ -339,7 +339,7 @@ impl Default for WindowOptions {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct TitlebarOptions {
     pub title: Option<SharedString>,
     pub appears_transparent: bool,

@@ -1,15 +1,22 @@
 use crate::{
     AnyView, AnyWindowHandle, AppCell, AppContext, AsyncAppContext, BackgroundExecutor, Context,
-    EventEmitter, ForegroundExecutor, InputEvent, KeyDownEvent, Keystroke, Model, ModelContext,
-    Result, Task, TestDispatcher, TestPlatform, WindowContext,
+    EventEmitter, ForegroundExecutor, InputEvent, KeyDownEvent, Keystroke, MacPlatform, Model,
+    ModelContext, Platform, Result, Task, TestDispatcher, TestPlatform, WindowContext,
 };
 use anyhow::{anyhow, bail};
-use futures::{Stream, StreamExt};
-use std::{future::Future, rc::Rc, sync::Arc, time::Duration};
+use futures::{channel::oneshot, Stream, StreamExt};
+use std::{
+    future::Future,
+    rc::Rc,
+    sync::Arc,
+    thread::{self, Thread},
+    time::Duration,
+};
 
 #[derive(Clone)]
 pub struct TestAppContext {
     pub app: Rc<AppCell>,
+    pub platform: Rc<TestPlatform>,
     pub background_executor: BackgroundExecutor,
     pub foreground_executor: ForegroundExecutor,
 }
@@ -58,7 +65,8 @@ impl TestAppContext {
         let asset_source = Arc::new(());
         let http_client = util::http::FakeHttpClient::with_404_response();
         Self {
-            app: AppContext::new(platform, asset_source, http_client),
+            app: AppContext::new(platform.clone(), asset_source, http_client),
+            platform,
             background_executor,
             foreground_executor,
         }
@@ -127,6 +135,21 @@ impl TestAppContext {
             background_executor: self.background_executor.clone(),
             foreground_executor: self.foreground_executor.clone(),
         }
+    }
+
+    pub async fn reveal(&mut self) {
+        self.executor().allow_parking();
+        let mut window = self.platform.active_window.lock();
+
+        let mut window_state = window.as_mut().unwrap().0.lock();
+
+        let handle = window_state.handle.clone();
+        let options = window_state.options.clone();
+        let scene = window_state.current_scene.take().unwrap();
+        dbg!("spawning");
+
+        let mac_platform = Rc::new(MacPlatform::new());
+        let window = mac_platform.open_window(handle, options);
     }
 
     pub fn dispatch_keystroke(

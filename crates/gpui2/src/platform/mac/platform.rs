@@ -361,24 +361,30 @@ impl Platform for MacPlatform {
     }
 
     fn run(&self, on_finish_launching: Box<dyn FnOnce()>) {
+        dbg!("hah");
         self.0.lock().finish_launching = Some(on_finish_launching);
+        dbg!("hmm");
 
         unsafe {
             let app: id = msg_send![APP_CLASS, sharedApplication];
             let app_delegate: id = msg_send![APP_DELEGATE_CLASS, new];
             app.setDelegate_(app_delegate);
+            dbg!("hmm");
 
             let self_ptr = self as *const Self as *const c_void;
             (*app).set_ivar(MAC_PLATFORM_IVAR, self_ptr);
             (*app_delegate).set_ivar(MAC_PLATFORM_IVAR, self_ptr);
+            dbg!("hmm");
 
             let pool = NSAutoreleasePool::new(nil);
             app.run();
             pool.drain();
+            dbg!("hmm");
 
             (*app).set_ivar(MAC_PLATFORM_IVAR, null_mut::<c_void>());
             (*app.delegate()).set_ivar(MAC_PLATFORM_IVAR, null_mut::<c_void>());
         }
+        dbg!("done...");
     }
 
     fn quit(&self) {
@@ -959,6 +965,7 @@ extern "C" fn send_event(this: &mut Object, _sel: Sel, native_event: id) {
 
 extern "C" fn did_finish_launching(this: &mut Object, _: Sel, _: id) {
     unsafe {
+        dbg!("did_finish_launching");
         let app: id = msg_send![APP_CLASS, sharedApplication];
         app.setActivationPolicy_(NSApplicationActivationPolicyRegular);
 
@@ -1110,7 +1117,7 @@ mod security {
     pub const errSecItemNotFound: OSStatus = -25300;
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 mod tests {
     use crate::ClipboardItem;
 
@@ -1148,7 +1155,7 @@ mod tests {
         );
     }
 
-    fn build_platform() -> MacPlatform {
+    pub fn build_platform() -> MacPlatform {
         let platform = MacPlatform::new();
         platform.0.lock().pasteboard = unsafe { NSPasteboard::pasteboardWithUniqueName(nil) };
         platform

@@ -1,48 +1,81 @@
-use std::{rc::Rc, sync::Arc};
-
 use parking_lot::Mutex;
+use std::{cell::RefCell, rc::Rc, sync::Arc};
+
+use futures::channel::oneshot;
 
 use crate::{
-    px, Pixels, PlatformAtlas, PlatformDisplay, PlatformWindow, Point, Scene, Size,
-    WindowAppearance, WindowBounds, WindowOptions,
+    px, AnyWindowHandle, MacPlatform, Pixels, Platform, PlatformAtlas, PlatformDisplay,
+    PlatformWindow, Point, Scene, Size, WindowAppearance, WindowBounds, WindowOptions,
 };
 
-#[derive(Default)]
-struct Handlers {
-    active_status_change: Vec<Box<dyn FnMut(bool)>>,
-    input: Vec<Box<dyn FnMut(crate::InputEvent) -> bool>>,
-    moved: Vec<Box<dyn FnMut()>>,
-    resize: Vec<Box<dyn FnMut(Size<Pixels>, f32)>>,
+pub struct TestWindowState {
+    pub(crate) options: WindowOptions,
+    pub(crate) handle: AnyWindowHandle,
+    pub(crate) current_scene: Option<Scene>,
+    pub(crate) display: Rc<dyn PlatformDisplay>,
+    pub(crate) sprite_atlas: Arc<dyn PlatformAtlas>,
+
+    on_input: Option<Box<dyn FnMut(crate::InputEvent) -> bool>>,
+    on_moved: Option<Box<dyn FnMut()>>,
+    on_resize: Option<Box<dyn FnMut(Size<Pixels>, f32)>>,
+    on_active_status_change: Option<Box<dyn FnMut(bool)>>,
 }
 
-pub struct TestWindow {
-    bounds: WindowBounds,
-    current_scene: Mutex<Option<Scene>>,
-    display: Rc<dyn PlatformDisplay>,
+#[derive(Clone)]
+pub struct TestWindow(pub(crate) Arc<Mutex<TestWindowState>>);
 
-    handlers: Mutex<Handlers>,
-    sprite_atlas: Arc<dyn PlatformAtlas>,
-}
 impl TestWindow {
-    pub fn new(options: WindowOptions, display: Rc<dyn PlatformDisplay>) -> Self {
-        Self {
-            bounds: options.bounds,
+    pub fn new(
+        options: WindowOptions,
+        handle: AnyWindowHandle,
+        display: Rc<dyn PlatformDisplay>,
+    ) -> Self {
+        TestWindow(Arc::new(Mutex::new(TestWindowState {
+            options,
             current_scene: Default::default(),
             display,
+            handle,
 
             sprite_atlas: Arc::new(TestAtlas),
-            handlers: Default::default(),
-        }
+            on_input: Default::default(),
+            on_moved: Default::default(),
+            on_resize: Default::default(),
+            on_active_status_change: Default::default(),
+        })))
+    }
+
+    pub async fn reveal(&self) {
+        let mac_platform = Rc::new(MacPlatform::new());
+        let this = self;
+
+        let handle = this.0.lock().handle.clone();
+        let options = this.0.lock().options.clone();
+        let scene = this.0.lock().current_scene.take().unwrap();
+        let mp2 = mac_platform.clone();
+
+        let (sender, receiver) = oneshot::channel();
+
+        dbg!("ohai");
+        mac_platform.run(Box::new(move || {
+            dbg!("oha2");
+            let window = mp2.clone().open_window(handle, options);
+            dbg!("oha3");
+            window.draw(scene);
+            dbg!("oha4");
+            sender.send(()).unwrap();
+        }));
+
+        receiver.await.unwrap()
     }
 }
 
 impl PlatformWindow for TestWindow {
     fn bounds(&self) -> WindowBounds {
-        self.bounds
+        self.0.lock().options.bounds
     }
 
     fn content_size(&self) -> Size<Pixels> {
-        let bounds = match self.bounds {
+        let bounds = match self.bounds() {
             WindowBounds::Fixed(bounds) => bounds,
             WindowBounds::Maximized | WindowBounds::Fullscreen => self.display().bounds(),
         };
@@ -62,7 +95,7 @@ impl PlatformWindow for TestWindow {
     }
 
     fn display(&self) -> std::rc::Rc<dyn crate::PlatformDisplay> {
-        self.display.clone()
+        self.0.lock().display.clone()
     }
 
     fn mouse_position(&self) -> Point<Pixels> {
@@ -115,15 +148,15 @@ impl PlatformWindow for TestWindow {
     }
 
     fn on_input(&self, callback: Box<dyn FnMut(crate::InputEvent) -> bool>) {
-        self.handlers.lock().input.push(callback)
+        self.0.lock().on_input.replace(callback);
     }
 
     fn on_active_status_change(&self, callback: Box<dyn FnMut(bool)>) {
-        self.handlers.lock().active_status_change.push(callback)
+        self.0.lock().on_active_status_change.replace(callback);
     }
 
     fn on_resize(&self, callback: Box<dyn FnMut(Size<Pixels>, f32)>) {
-        self.handlers.lock().resize.push(callback)
+        self.0.lock().on_resize.replace(callback);
     }
 
     fn on_fullscreen(&self, _callback: Box<dyn FnMut(bool)>) {
@@ -131,7 +164,7 @@ impl PlatformWindow for TestWindow {
     }
 
     fn on_moved(&self, callback: Box<dyn FnMut()>) {
-        self.handlers.lock().moved.push(callback)
+        self.0.lock().on_moved.replace(callback);
     }
 
     fn on_should_close(&self, _callback: Box<dyn FnMut() -> bool>) {
@@ -151,11 +184,11 @@ impl PlatformWindow for TestWindow {
     }
 
     fn draw(&self, scene: crate::Scene) {
-        self.current_scene.lock().replace(scene);
+        self.0.lock().current_scene.replace(scene);
     }
 
     fn sprite_atlas(&self) -> std::sync::Arc<dyn crate::PlatformAtlas> {
-        self.sprite_atlas.clone()
+        self.0.lock().sprite_atlas.clone()
     }
 }
 
