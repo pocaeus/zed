@@ -162,25 +162,25 @@ impl EditorElement {
         true
     }
 
-    // fn mouse_right_down(
-    //     editor: &mut Editor,
-    //     position: gpui::Point<Pixels>,
-    //     position_map: &PositionMap,
-    //     text_bounds: Bounds<Pixels>,
-    //     cx: &mut EventContext<Editor>,
-    // ) -> bool {
-    //     if !text_bounds.contains_point(position) {
-    //         return false;
-    //     }
-    //     let point_for_position = position_map.point_for_position(text_bounds, position);
-    //     mouse_context_menu::deploy_context_menu(
-    //         editor,
-    //         position,
-    //         point_for_position.previous_valid,
-    //         cx,
-    //     );
-    //     true
-    // }
+    fn mouse_right_down(
+        editor: &mut Editor,
+        position: gpui::Point<Pixels>,
+        position_map: &PositionMap,
+        text_bounds: Bounds<Pixels>,
+        cx: &mut ViewContext<Editor>,
+    ) -> bool {
+        if !text_bounds.contains_point(&position) {
+            return false;
+        }
+        let point_for_position = position_map.point_for_position(text_bounds, position);
+        crate::mouse_context_menu::deploy_context_menu(
+            editor,
+            position,
+            point_for_position.previous_valid,
+            cx,
+        );
+        true
+    }
 
     fn mouse_up(
         editor: &mut Editor,
@@ -2193,7 +2193,27 @@ impl EditorElement {
                     return;
                 }
 
-                if Self::mouse_down(editor, event, &position_map, text_bounds, gutter_bounds, cx) {
+                if event.button == MouseButton::Left
+                    && Self::mouse_down(
+                        editor,
+                        event,
+                        &position_map,
+                        text_bounds,
+                        gutter_bounds,
+                        cx,
+                    )
+                {
+                    cx.stop_propagation()
+                }
+                if event.button == MouseButton::Right
+                    && Self::mouse_right_down(
+                        editor,
+                        event.position,
+                        position_map.as_ref(),
+                        text_bounds,
+                        cx,
+                    )
+                {
                     cx.stop_propagation()
                 }
             }
@@ -2210,21 +2230,6 @@ impl EditorElement {
                 }
             }
         });
-        // todo!()
-        // on_down(MouseButton::Right, {
-        //     let position_map = position_map.clone();
-        //     move |event, editor, cx| {
-        //         if !Self::mouse_right_down(
-        //             editor,
-        //             event.position,
-        //             position_map.as_ref(),
-        //             text_bounds,
-        //             cx,
-        //         ) {
-        //             cx.propagate_event();
-        //         }
-        //     }
-        // });
         cx.on_mouse_event({
             let position_map = position_map.clone();
             move |editor, event: &MouseMoveEvent, phase, cx| {

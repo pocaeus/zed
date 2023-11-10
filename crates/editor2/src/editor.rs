@@ -654,7 +654,7 @@ pub struct Editor {
     inlay_background_highlights: TreeMap<Option<TypeId>, InlayBackgroundHighlight>,
     nav_history: Option<ItemNavHistory>,
     context_menu: RwLock<Option<ContextMenu>>,
-    // mouse_context_menu: View<context_menu::ContextMenu>,
+    mouse_context_menu: Option<ui2::ContextMenu>,
     completion_tasks: Vec<(CompletionId, Task<Option<()>>)>,
     next_completion_id: CompletionId,
     available_code_actions: Option<(Model<Buffer>, Arc<[CodeAction]>)>,
@@ -1988,8 +1988,7 @@ impl Editor {
             inlay_background_highlights: Default::default(),
             nav_history: None,
             context_menu: RwLock::new(None),
-            // mouse_context_menu: cx
-            //     .add_view(|cx| context_menu::ContextMenu::new(editor_view_id, cx)),
+            mouse_context_menu: None,
             completion_tasks: Default::default(),
             next_completion_id: 0,
             next_inlay_id: 0,
@@ -4510,10 +4509,12 @@ impl Editor {
     //     }
 
     pub fn context_menu_visible(&self) -> bool {
-        self.context_menu
-            .read()
-            .as_ref()
-            .map_or(false, |menu| menu.visible())
+        self.mouse_context_menu.is_some()
+            || self
+                .context_menu
+                .read()
+                .as_ref()
+                .map_or(false, |menu| menu.visible())
     }
 
     pub fn render_context_menu(

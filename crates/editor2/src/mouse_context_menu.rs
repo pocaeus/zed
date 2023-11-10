@@ -1,5 +1,9 @@
-use crate::{DisplayPoint, Editor, EditorMode, SelectMode};
+use crate::{
+    DisplayPoint, Editor, EditorMode, FindAllReferences, GoToDefinition, GoToTypeDefinition,
+    Rename, RevealInFinder, SelectMode, ToggleCodeActions,
+};
 use gpui::{Pixels, Point, ViewContext};
+use ui2::{ContextMenu, ContextMenuItem, Label};
 
 pub fn deploy_context_menu(
     editor: &mut Editor,
@@ -18,39 +22,32 @@ pub fn deploy_context_menu(
     //     return;
     // }
 
-    // // Don't show the context menu if there isn't a project associated with this editor
-    // if editor.project.is_none() {
-    //     return;
-    // }
+    // Don't show the context menu if there isn't a project associated with this editor
+    if editor.project.is_none() {
+        return;
+    }
 
-    // // Move the cursor to the clicked location so that dispatched actions make sense
-    // editor.change_selections(None, cx, |s| {
-    //     s.clear_disjoint();
-    //     s.set_pending_display_range(point..point, SelectMode::Character);
-    // });
+    // Move the cursor to the clicked location so that dispatched actions make sense
+    editor.change_selections(None, cx, |s| {
+        s.clear_disjoint();
+        s.set_pending_display_range(point..point, SelectMode::Character);
+    });
 
-    // editor.mouse_context_menu.update(cx, |menu, cx| {
-    //     menu.show(
-    //         position,
-    //         AnchorCorner::TopLeft,
-    //         vec![
-    //             ContextMenuItem::action("Rename Symbol", Rename),
-    //             ContextMenuItem::action("Go to Definition", GoToDefinition),
-    //             ContextMenuItem::action("Go to Type Definition", GoToTypeDefinition),
-    //             ContextMenuItem::action("Find All References", FindAllReferences),
-    //             ContextMenuItem::action(
-    //                 "Code Actions",
-    //                 ToggleCodeActions {
-    //                     deployed_from_indicator: false,
-    //                 },
-    //             ),
-    //             ContextMenuItem::Separator,
-    //             ContextMenuItem::action("Reveal in Finder", RevealInFinder),
-    //         ],
-    //         cx,
-    //     );
-    // });
-    // cx.notify();
+    editor.mouse_context_menu = Some(ContextMenu::new([
+        ContextMenuItem::entry(Label::new("Rename Symbol"), Rename),
+        ContextMenuItem::entry(Label::new("Go to Definition"), GoToDefinition),
+        ContextMenuItem::entry(Label::new("Go to Type Definition"), GoToTypeDefinition),
+        ContextMenuItem::entry(Label::new("Find All References"), FindAllReferences),
+        ContextMenuItem::entry(
+            Label::new("Code Actions"),
+            ToggleCodeActions {
+                deployed_from_indicator: false,
+            },
+        ),
+        ContextMenuItem::separator(),
+        ContextMenuItem::entry(Label::new("Reveal in Finder"), RevealInFinder),
+    ]));
+    cx.notify();
 }
 
 // #[cfg(test)]
