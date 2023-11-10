@@ -21,8 +21,10 @@ static EXPECT_MESSAGE: &'static str =
 
 impl TaffyLayoutEngine {
     pub fn new() -> Self {
+        let mut taffy = Taffy::new();
+        taffy.disable_rounding();
         TaffyLayoutEngine {
-            taffy: Taffy::new(),
+            taffy,
             children_to_parents: HashMap::default(),
             absolute_layout_bounds: HashMap::default(),
             computed_layouts: HashSet::default(),
