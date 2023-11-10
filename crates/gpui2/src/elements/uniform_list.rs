@@ -56,7 +56,7 @@ pub struct UniformList<V: 'static> {
     scroll_handle: Option<UniformListScrollHandle>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct UniformListScrollHandle(Arc<Mutex<Option<ScrollHandleState>>>);
 
 #[derive(Clone, Debug)]
@@ -158,7 +158,6 @@ impl<V: 'static> Element<V> for UniformList<V> {
         cx: &mut ViewContext<V>,
     ) {
         let style = self.computed_style();
-        style.paint(bounds, cx);
 
         let border = style.border_widths.to_pixels(cx.rem_size());
         let padding = style.padding.to_pixels(bounds.size.into(), cx.rem_size());
@@ -170,6 +169,8 @@ impl<V: 'static> Element<V> for UniformList<V> {
         );
 
         cx.with_z_index(style.z_index.unwrap_or(0), |cx| {
+            style.paint(bounds, cx);
+
             let content_size;
             if self.item_count > 0 {
                 let item_height = self
@@ -207,19 +208,13 @@ impl<V: 'static> Element<V> for UniformList<V> {
 
                 cx.with_z_index(1, |cx| {
                     for (item, ix) in items.iter_mut().zip(visible_range) {
-                        item.initialize(view_state, cx);
-
-                        let layout_id = item.layout(view_state, cx);
-                        cx.compute_layout(
-                            layout_id,
-                            Size {
-                                width: AvailableSpace::Definite(bounds.size.width),
-                                height: AvailableSpace::Definite(item_height),
-                            },
-                        );
-                        let offset =
+                        let item_origin =
                             padded_bounds.origin + point(px(0.), item_height * ix + scroll_offset);
-                        cx.with_element_offset(Some(offset), |cx| item.paint(view_state, cx))
+                        let available_space = size(
+                            AvailableSpace::Definite(padded_bounds.size.width),
+                            AvailableSpace::Definite(item_height),
+                        );
+                        item.draw(item_origin, available_space, view_state, cx);
                     }
                 });
             } else {
@@ -252,20 +247,15 @@ impl<V> UniformList<V> {
         cx: &mut ViewContext<V>,
     ) -> Size<Pixels> {
         let mut items = (self.render_items)(view_state, 0..1, cx);
-        debug_assert!(items.len() == 1);
+        debug_assert_eq!(items.len(), 1);
         let mut item_to_measure = items.pop().unwrap();
-        item_to_measure.initialize(view_state, cx);
-        let layout_id = item_to_measure.layout(view_state, cx);
-        cx.compute_layout(
-            layout_id,
-            Size {
-                width: list_width.map_or(AvailableSpace::MinContent, |width| {
-                    AvailableSpace::Definite(width)
-                }),
-                height: AvailableSpace::MinContent,
-            },
+        let available_space = size(
+            list_width.map_or(AvailableSpace::MinContent, |width| {
+                AvailableSpace::Definite(width)
+            }),
+            AvailableSpace::MinContent,
         );
-        cx.layout_bounds(layout_id).size
+        item_to_measure.measure(available_space, view_state, cx)
     }
 
     pub fn track_scroll(mut self, handle: UniformListScrollHandle) -> Self {

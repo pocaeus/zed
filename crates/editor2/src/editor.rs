@@ -39,10 +39,11 @@ use futures::FutureExt;
 use fuzzy::{StringMatch, StringMatchCandidate};
 use git::diff_hunk_to_display;
 use gpui::{
-    action, actions, point, px, relative, rems, size, AnyElement, AppContext, BackgroundExecutor,
-    Bounds, ClipboardItem, Context, DispatchContext, EventEmitter, FocusHandle, FontFeatures,
-    FontStyle, FontWeight, HighlightStyle, Hsla, InputHandler, Model, Pixels, Render, Subscription,
-    Task, TextStyle, View, ViewContext, VisualContext, WeakView, WindowContext,
+    action, actions, div, point, px, relative, rems, size, uniform_list, AnyElement, AppContext,
+    BackgroundExecutor, Bounds, ClipboardItem, Component, Context, DispatchContext, EventEmitter,
+    FocusHandle, FontFeatures, FontStyle, FontWeight, HighlightStyle, Hsla, InputHandler, Model,
+    ParentElement, Pixels, Render, StatelessInteractive, Styled, Subscription, Task, TextStyle,
+    UniformListScrollHandle, View, ViewContext, VisualContext, WeakView, WindowContext,
 };
 use highlight_matching_bracket::refresh_matching_bracket_highlights;
 use hover_popover::{hide_hover, HoverState};
@@ -95,6 +96,7 @@ use text::{OffsetUtf16, Rope};
 use theme::{
     ActiveTheme, DiagnosticStyle, PlayerColor, SyntaxTheme, Theme, ThemeColors, ThemeSettings,
 };
+use ui2::IconButton;
 use util::{post_inc, RangeExt, ResultExt, TryFutureExt};
 use workspace::{
     item::ItemEvent, searchable::SearchEvent, ItemNavHistory, SplitDirection, ViewId, Workspace,
@@ -919,15 +921,14 @@ impl ContextMenu {
     fn render(
         &self,
         cursor_position: DisplayPoint,
-        style: EditorStyle,
+        style: &EditorStyle,
         workspace: Option<WeakView<Workspace>>,
         cx: &mut ViewContext<Editor>,
     ) -> (DisplayPoint, AnyElement<Editor>) {
-        todo!()
-        // match self {
-        //     ContextMenu::Completions(menu) => (cursor_position, menu.render(style, workspace, cx)),
-        //     ContextMenu::CodeActions(menu) => menu.render(cursor_position, style, cx),
-        // }
+        match self {
+            ContextMenu::Completions(menu) => (cursor_position, menu.render(style, workspace, cx)),
+            ContextMenu::CodeActions(menu) => menu.render(cursor_position, style, cx),
+        }
     }
 }
 
@@ -940,29 +941,13 @@ struct CompletionsMenu {
     match_candidates: Arc<[StringMatchCandidate]>,
     matches: Arc<[StringMatch]>,
     selected_item: usize,
-    list: UniformListState,
-}
-
-// todo!(this is fake)
-#[derive(Clone, Default)]
-struct UniformListState;
-
-// todo!(this is fake)
-impl UniformListState {
-    pub fn scroll_to(&mut self, target: ScrollTarget) {}
-}
-
-// todo!(this is somewhat fake)
-#[derive(Debug)]
-pub enum ScrollTarget {
-    Show(usize),
-    Center(usize),
+    scroll_handle: UniformListScrollHandle,
 }
 
 impl CompletionsMenu {
     fn select_first(&mut self, project: Option<&Model<Project>>, cx: &mut ViewContext<Editor>) {
         self.selected_item = 0;
-        self.list.scroll_to(ScrollTarget::Show(self.selected_item));
+        self.scroll_handle.scroll_to_item(self.selected_item);
         self.attempt_resolve_selected_completion_documentation(project, cx);
         cx.notify();
     }
@@ -973,7 +958,7 @@ impl CompletionsMenu {
         } else {
             self.selected_item = self.matches.len() - 1;
         }
-        self.list.scroll_to(ScrollTarget::Show(self.selected_item));
+        self.scroll_handle.scroll_to_item(self.selected_item);
         self.attempt_resolve_selected_completion_documentation(project, cx);
         cx.notify();
     }
@@ -984,14 +969,14 @@ impl CompletionsMenu {
         } else {
             self.selected_item = 0;
         }
-        self.list.scroll_to(ScrollTarget::Show(self.selected_item));
+        self.scroll_handle.scroll_to_item(self.selected_item);
         self.attempt_resolve_selected_completion_documentation(project, cx);
         cx.notify();
     }
 
     fn select_last(&mut self, project: Option<&Model<Project>>, cx: &mut ViewContext<Editor>) {
         self.selected_item = self.matches.len() - 1;
-        self.list.scroll_to(ScrollTarget::Show(self.selected_item));
+        self.scroll_handle.scroll_to_item(self.selected_item);
         self.attempt_resolve_selected_completion_documentation(project, cx);
         cx.notify();
     }
@@ -1252,13 +1237,13 @@ impl CompletionsMenu {
 
     fn render(
         &self,
-        style: EditorStyle,
+        style: &EditorStyle,
         workspace: Option<WeakView<Workspace>>,
         cx: &mut ViewContext<Editor>,
-    ) {
+    ) -> AnyElement<Editor> {
         todo!("old implementation below")
     }
-    // ) -> AnyElement<Editor> {
+
     //     enum CompletionTag {}
 
     //     let settings = EditorSettings>(cx);
@@ -1527,14 +1512,14 @@ struct CodeActionsMenu {
     actions: Arc<[CodeAction]>,
     buffer: Model<Buffer>,
     selected_item: usize,
-    list: UniformListState,
+    scroll_handle: UniformListScrollHandle,
     deployed_from_indicator: bool,
 }
 
 impl CodeActionsMenu {
     fn select_first(&mut self, cx: &mut ViewContext<Editor>) {
         self.selected_item = 0;
-        self.list.scroll_to(ScrollTarget::Show(self.selected_item));
+        self.scroll_handle.scroll_to_item(self.selected_item);
         cx.notify()
     }
 
@@ -1544,7 +1529,7 @@ impl CodeActionsMenu {
         } else {
             self.selected_item = self.actions.len() - 1;
         }
-        self.list.scroll_to(ScrollTarget::Show(self.selected_item));
+        self.scroll_handle.scroll_to_item(self.selected_item);
         cx.notify();
     }
 
@@ -1554,13 +1539,13 @@ impl CodeActionsMenu {
         } else {
             self.selected_item = 0;
         }
-        self.list.scroll_to(ScrollTarget::Show(self.selected_item));
+        self.scroll_handle.scroll_to_item(self.selected_item);
         cx.notify();
     }
 
     fn select_last(&mut self, cx: &mut ViewContext<Editor>) {
         self.selected_item = self.actions.len() - 1;
-        self.list.scroll_to(ScrollTarget::Show(self.selected_item));
+        self.scroll_handle.scroll_to_item(self.selected_item);
         cx.notify()
     }
 
@@ -1571,10 +1556,50 @@ impl CodeActionsMenu {
     fn render(
         &self,
         mut cursor_position: DisplayPoint,
-        style: EditorStyle,
+        style: &EditorStyle,
         cx: &mut ViewContext<Editor>,
     ) -> (DisplayPoint, AnyElement<Editor>) {
-        todo!("old version below")
+        let actions = self.actions.clone();
+        let selected_item = self.selected_item;
+        let element = uniform_list(
+            "code_actions_menu",
+            self.actions.len(),
+            move |editor, range, cx| {
+                actions[range.clone()]
+                    .iter()
+                    .enumerate()
+                    .map(|(ix, action)| {
+                        let item_ix = range.start + ix;
+                        let selected = selected_item == item_ix;
+                        let colors = cx.theme().colors();
+                        div()
+                            .px_2()
+                            .text_color(colors.text)
+                            .when(selected, |style| {
+                                style
+                                    .bg(colors.element_active)
+                                    .text_color(colors.text_accent)
+                            })
+                            .hover(|style| {
+                                style
+                                    .bg(colors.element_hover)
+                                    .text_color(colors.text_accent)
+                            })
+                            .child(action.lsp_action.title.clone())
+                    })
+                    .collect()
+            },
+        )
+        .bg(cx.theme().colors().element_background)
+        .px_2()
+        .py_1()
+        .render();
+
+        if self.deployed_from_indicator {
+            *cursor_position.column_mut() = 0;
+        }
+
+        (cursor_position, element)
     }
     //     enum ActionTag {}
 
@@ -3660,7 +3685,7 @@ impl Editor {
                         completions: Arc::new(RwLock::new(completions.into())),
                         matches: Vec::new().into(),
                         selected_item: 0,
-                        list: Default::default(),
+                        scroll_handle: UniformListScrollHandle::new(),
                     };
                     menu.filter(query.as_deref(), cx.background_executor().clone())
                         .await;
@@ -3846,44 +3871,44 @@ impl Editor {
     //         }))
     //     }
 
-    //     pub fn toggle_code_actions(&mut self, action: &ToggleCodeActions, cx: &mut ViewContext<Self>) {
-    //         let mut context_menu = self.context_menu.write();
-    //         if matches!(context_menu.as_ref(), Some(ContextMenu::CodeActions(_))) {
-    //             *context_menu = None;
-    //             cx.notify();
-    //             return;
-    //         }
-    //         drop(context_menu);
+    pub fn toggle_code_actions(&mut self, action: &ToggleCodeActions, cx: &mut ViewContext<Self>) {
+        let mut context_menu = self.context_menu.write();
+        if matches!(context_menu.as_ref(), Some(ContextMenu::CodeActions(_))) {
+            *context_menu = None;
+            cx.notify();
+            return;
+        }
+        drop(context_menu);
 
-    //         let deployed_from_indicator = action.deployed_from_indicator;
-    //         let mut task = self.code_actions_task.take();
-    //         cx.spawn(|this, mut cx| async move {
-    //             while let Some(prev_task) = task {
-    //                 prev_task.await;
-    //                 task = this.update(&mut cx, |this, _| this.code_actions_task.take())?;
-    //             }
+        let deployed_from_indicator = action.deployed_from_indicator;
+        let mut task = self.code_actions_task.take();
+        cx.spawn(|this, mut cx| async move {
+            while let Some(prev_task) = task {
+                prev_task.await;
+                task = this.update(&mut cx, |this, _| this.code_actions_task.take())?;
+            }
 
-    //             this.update(&mut cx, |this, cx| {
-    //                 if this.focused {
-    //                     if let Some((buffer, actions)) = this.available_code_actions.clone() {
-    //                         this.completion_tasks.clear();
-    //                         this.discard_copilot_suggestion(cx);
-    //                         *this.context_menu.write() =
-    //                             Some(ContextMenu::CodeActions(CodeActionsMenu {
-    //                                 buffer,
-    //                                 actions,
-    //                                 selected_item: Default::default(),
-    //                                 list: Default::default(),
-    //                                 deployed_from_indicator,
-    //                             }));
-    //                     }
-    //                 }
-    //             })?;
+            this.update(&mut cx, |this, cx| {
+                if this.focus_handle.is_focused(cx) {
+                    if let Some((buffer, actions)) = this.available_code_actions.clone() {
+                        this.completion_tasks.clear();
+                        this.discard_copilot_suggestion(cx);
+                        *this.context_menu.write() =
+                            Some(ContextMenu::CodeActions(CodeActionsMenu {
+                                buffer,
+                                actions,
+                                selected_item: Default::default(),
+                                scroll_handle: UniformListScrollHandle::default(),
+                                deployed_from_indicator,
+                            }));
+                    }
+                }
+            })?;
 
-    //             Ok::<_, anyhow::Error>(())
-    //         })
-    //         .detach_and_log_err(cx);
-    //     }
+            Ok::<_, anyhow::Error>(())
+        })
+        .detach_and_log_err(cx);
+    }
 
     //     pub fn confirm_code_action(
     //         workspace: &mut Workspace,
@@ -4390,41 +4415,29 @@ impl Editor {
         self.discard_copilot_suggestion(cx);
     }
 
-    //     pub fn render_code_actions_indicator(
-    //         &self,
-    //         style: &EditorStyle,
-    //         is_active: bool,
-    //         cx: &mut ViewContext<Self>,
-    //     ) -> Option<AnyElement<Self>> {
-    //         if self.available_code_actions.is_some() {
-    //             enum CodeActions {}
-    //             Some(
-    //                 MouseEventHandler::new::<CodeActions, _>(0, cx, |state, _| {
-    //                     Svg::new("icons/bolt.svg").with_color(
-    //                         style
-    //                             .code_actions
-    //                             .indicator
-    //                             .in_state(is_active)
-    //                             .style_for(state)
-    //                             .color,
-    //                     )
-    //                 })
-    //                 .with_cursor_style(CursorStyle::PointingHand)
-    //                 .with_padding(Padding::uniform(3.))
-    //                 .on_down(MouseButton::Left, |_, this, cx| {
-    //                     this.toggle_code_actions(
-    //                         &ToggleCodeActions {
-    //                             deployed_from_indicator: true,
-    //                         },
-    //                         cx,
-    //                     );
-    //                 })
-    //                 .into_any(),
-    //             )
-    //         } else {
-    //             None
-    //         }
-    //     }
+    pub fn render_code_actions_indicator(
+        &self,
+        style: &EditorStyle,
+        is_active: bool,
+        cx: &mut ViewContext<Self>,
+    ) -> Option<AnyElement<Self>> {
+        if self.available_code_actions.is_some() {
+            Some(
+                IconButton::new("code_actions_indicator", ui2::Icon::Bolt)
+                    .on_click(|editor: &mut Editor, cx| {
+                        editor.toggle_code_actions(
+                            &ToggleCodeActions {
+                                deployed_from_indicator: true,
+                            },
+                            cx,
+                        );
+                    })
+                    .render(),
+            )
+        } else {
+            None
+        }
+    }
 
     //     pub fn render_fold_indicators(
     //         &self,
@@ -4491,29 +4504,27 @@ impl Editor {
     //     }
 
     pub fn context_menu_visible(&self) -> bool {
-        false
-        // todo!("context menu")
-        // self.context_menu
-        //     .read()
-        //     .as_ref()
-        //     .map_or(false, |menu| menu.visible())
+        self.context_menu
+            .read()
+            .as_ref()
+            .map_or(false, |menu| menu.visible())
     }
 
-    //     pub fn render_context_menu(
-    //         &self,
-    //         cursor_position: DisplayPoint,
-    //         style: EditorStyle,
-    //         cx: &mut ViewContext<Editor>,
-    //     ) -> Option<(DisplayPoint, AnyElement<Editor>)> {
-    //         self.context_menu.read().as_ref().map(|menu| {
-    //             menu.render(
-    //                 cursor_position,
-    //                 style,
-    //                 self.workspace.as_ref().map(|(w, _)| w.clone()),
-    //                 cx,
-    //             )
-    //         })
-    //     }
+    pub fn render_context_menu(
+        &self,
+        cursor_position: DisplayPoint,
+        style: &EditorStyle,
+        cx: &mut ViewContext<Editor>,
+    ) -> Option<(DisplayPoint, AnyElement<Editor>)> {
+        self.context_menu.read().as_ref().map(|menu| {
+            menu.render(
+                cursor_position,
+                style,
+                self.workspace.as_ref().map(|(w, _)| w.clone()),
+                cx,
+            )
+        })
+    }
 
     fn hide_context_menu(&mut self, cx: &mut ViewContext<Self>) -> Option<ContextMenu> {
         cx.notify();
@@ -5954,29 +5965,29 @@ impl Editor {
         });
     }
 
-    //     pub fn context_menu_first(&mut self, _: &ContextMenuFirst, cx: &mut ViewContext<Self>) {
-    //         if let Some(context_menu) = self.context_menu.write().as_mut() {
-    //             context_menu.select_first(self.project.as_ref(), cx);
-    //         }
-    //     }
+    pub fn context_menu_first(&mut self, _: &ContextMenuFirst, cx: &mut ViewContext<Self>) {
+        if let Some(context_menu) = self.context_menu.write().as_mut() {
+            context_menu.select_first(self.project.as_ref(), cx);
+        }
+    }
 
-    //     pub fn context_menu_prev(&mut self, _: &ContextMenuPrev, cx: &mut ViewContext<Self>) {
-    //         if let Some(context_menu) = self.context_menu.write().as_mut() {
-    //             context_menu.select_prev(self.project.as_ref(), cx);
-    //         }
-    //     }
+    pub fn context_menu_prev(&mut self, _: &ContextMenuPrev, cx: &mut ViewContext<Self>) {
+        if let Some(context_menu) = self.context_menu.write().as_mut() {
+            context_menu.select_prev(self.project.as_ref(), cx);
+        }
+    }
 
-    //     pub fn context_menu_next(&mut self, _: &ContextMenuNext, cx: &mut ViewContext<Self>) {
-    //         if let Some(context_menu) = self.context_menu.write().as_mut() {
-    //             context_menu.select_next(self.project.as_ref(), cx);
-    //         }
-    //     }
+    pub fn context_menu_next(&mut self, _: &ContextMenuNext, cx: &mut ViewContext<Self>) {
+        if let Some(context_menu) = self.context_menu.write().as_mut() {
+            context_menu.select_next(self.project.as_ref(), cx);
+        }
+    }
 
-    //     pub fn context_menu_last(&mut self, _: &ContextMenuLast, cx: &mut ViewContext<Self>) {
-    //         if let Some(context_menu) = self.context_menu.write().as_mut() {
-    //             context_menu.select_last(self.project.as_ref(), cx);
-    //         }
-    //     }
+    pub fn context_menu_last(&mut self, _: &ContextMenuLast, cx: &mut ViewContext<Self>) {
+        if let Some(context_menu) = self.context_menu.write().as_mut() {
+            context_menu.select_last(self.project.as_ref(), cx);
+        }
+    }
 
     pub fn move_to_previous_word_start(
         &mut self,
