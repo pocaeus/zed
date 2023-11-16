@@ -1,6 +1,6 @@
 use crate::{
-    DisplayPoint, Editor, EditorMode, FindAllReferences, GoToDefinition, GoToTypeDefinition,
-    Rename, RevealInFinder, SelectMode, ToggleCodeActions,
+    element::PointForPosition, DisplayPoint, Editor, EditorMode, FindAllReferences, GoToDefinition,
+    GoToTypeDefinition, Rename, RevealInFinder, SelectMode, ToggleCodeActions,
 };
 use gpui::{Pixels, Point, ViewContext};
 use ui2::{ContextMenu, ContextMenuItem, Label};
@@ -8,11 +8,9 @@ use ui2::{ContextMenu, ContextMenuItem, Label};
 pub fn deploy_context_menu(
     editor: &mut Editor,
     position: Point<Pixels>,
-    point: DisplayPoint,
+    point: PointForPosition,
     cx: &mut ViewContext<Editor>,
 ) {
-    todo!();
-
     // if !editor.focused {
     //     cx.focus_self();
     // }
@@ -26,27 +24,33 @@ pub fn deploy_context_menu(
     if editor.project.is_none() {
         return;
     }
-
+    let p = point.previous_valid;
     // Move the cursor to the clicked location so that dispatched actions make sense
     editor.change_selections(None, cx, |s| {
         s.clear_disjoint();
-        s.set_pending_display_range(point..point, SelectMode::Character);
+        s.set_pending_display_range(p..p, SelectMode::Character);
     });
 
-    editor.mouse_context_menu = Some(ContextMenu::new([
-        ContextMenuItem::entry(Label::new("Rename Symbol"), Rename),
-        ContextMenuItem::entry(Label::new("Go to Definition"), GoToDefinition),
-        ContextMenuItem::entry(Label::new("Go to Type Definition"), GoToTypeDefinition),
-        ContextMenuItem::entry(Label::new("Find All References"), FindAllReferences),
-        ContextMenuItem::entry(
-            Label::new("Code Actions"),
-            ToggleCodeActions {
-                deployed_from_indicator: false,
-            },
-        ),
-        ContextMenuItem::separator(),
-        ContextMenuItem::entry(Label::new("Reveal in Finder"), RevealInFinder),
-    ]));
+    *editor.context_menu.write() = Some(crate::ContextMenu::MouseContextMenu(
+        crate::MouseContextMenu {
+            menu: ContextMenu::new([
+                ContextMenuItem::entry(Label::new("Rename Symbol"), Rename),
+                ContextMenuItem::entry(Label::new("Go to Definition"), GoToDefinition),
+                ContextMenuItem::entry(Label::new("Go to Type Definition"), GoToTypeDefinition),
+                ContextMenuItem::entry(Label::new("Find All References"), FindAllReferences),
+                ContextMenuItem::entry(
+                    Label::new("Code Actions"),
+                    ToggleCodeActions {
+                        deployed_from_indicator: false,
+                    },
+                ),
+                ContextMenuItem::separator(),
+                ContextMenuItem::entry(Label::new("Reveal in Finder"), RevealInFinder),
+            ]),
+            visible: true,
+            exact_point: point.exact_unclipped,
+        },
+    ));
     cx.notify();
 }
 

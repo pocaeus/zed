@@ -312,6 +312,10 @@ impl ListEntry {
         };
         div()
             .relative()
+            .hover(|mut style| {
+                style.background = Some(cx.theme().colors().editor_background.into());
+                style
+            })
             .on_mouse_down(gpui::MouseButton::Left, {
                 let action = self.on_click.map(|action| action.boxed_clone());
 

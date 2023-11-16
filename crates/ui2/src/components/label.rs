@@ -42,7 +42,7 @@ pub enum LineHeightStyle {
     UILabel,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Label {
     label: SharedString,
     line_height_style: LineHeightStyle,

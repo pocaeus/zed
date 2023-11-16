@@ -173,12 +173,7 @@ impl EditorElement {
             return false;
         }
         let point_for_position = position_map.point_for_position(text_bounds, position);
-        crate::mouse_context_menu::deploy_context_menu(
-            editor,
-            position,
-            point_for_position.previous_valid,
-            cx,
-        );
+        crate::mouse_context_menu::deploy_context_menu(editor, position, point_for_position, cx);
         true
     }
 
@@ -831,7 +826,7 @@ impl EditorElement {
                         list_origin.y -= layout.position_map.line_height - list_height;
                     }
 
-                    context_menu.draw(list_origin, available_space, editor, cx);
+                    context_menu.draw(dbg!(list_origin), available_space, editor, cx);
                 })
             }
 

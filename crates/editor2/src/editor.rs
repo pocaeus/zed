@@ -422,6 +422,7 @@ pub fn init_settings(cx: &mut AppContext) {
 }
 
 pub fn init(cx: &mut AppContext) {
+    ui2::init(cx);
     init_settings(cx);
     // cx.register_action_type(Editor::new_file);
     // cx.register_action_type(Editor::new_file_in_direction);
@@ -845,6 +846,7 @@ struct InvalidationStack<T>(Vec<T>);
 enum ContextMenu {
     Completions(CompletionsMenu),
     CodeActions(CodeActionsMenu),
+    MouseContextMenu(MouseContextMenu),
 }
 
 impl ContextMenu {
@@ -857,6 +859,7 @@ impl ContextMenu {
             match self {
                 ContextMenu::Completions(menu) => menu.select_first(project, cx),
                 ContextMenu::CodeActions(menu) => menu.select_first(cx),
+                ContextMenu::MouseContextMenu(menu) => menu.select_first(cx),
             }
             true
         } else {
@@ -873,6 +876,7 @@ impl ContextMenu {
             match self {
                 ContextMenu::Completions(menu) => menu.select_prev(project, cx),
                 ContextMenu::CodeActions(menu) => menu.select_prev(cx),
+                ContextMenu::MouseContextMenu(menu) => menu.select_prev(cx),
             }
             true
         } else {
@@ -889,6 +893,7 @@ impl ContextMenu {
             match self {
                 ContextMenu::Completions(menu) => menu.select_next(project, cx),
                 ContextMenu::CodeActions(menu) => menu.select_next(cx),
+                ContextMenu::MouseContextMenu(menu) => menu.select_next(cx),
             }
             true
         } else {
@@ -905,6 +910,7 @@ impl ContextMenu {
             match self {
                 ContextMenu::Completions(menu) => menu.select_last(project, cx),
                 ContextMenu::CodeActions(menu) => menu.select_last(cx),
+                ContextMenu::MouseContextMenu(menu) => menu.select_last(cx),
             }
             true
         } else {
@@ -916,6 +922,7 @@ impl ContextMenu {
         match self {
             ContextMenu::Completions(menu) => menu.visible(),
             ContextMenu::CodeActions(menu) => menu.visible(),
+            ContextMenu::MouseContextMenu(menu) => menu.visible(),
         }
     }
 
@@ -929,6 +936,7 @@ impl ContextMenu {
         match self {
             ContextMenu::Completions(menu) => (cursor_position, menu.render(style, workspace, cx)),
             ContextMenu::CodeActions(menu) => menu.render(cursor_position, style, cx),
+            ContextMenu::MouseContextMenu(menu) => menu.render(cursor_position, style, cx),
         }
     }
 }
@@ -1509,6 +1517,35 @@ impl CompletionsMenu {
 }
 
 #[derive(Clone)]
+struct MouseContextMenu {
+    menu: ui2::ContextMenu,
+    visible: bool,
+    exact_point: DisplayPoint,
+}
+impl MouseContextMenu {
+    fn select_first(&self, cx: &mut ViewContext<'_, Editor>) {}
+
+    fn select_next(&self, cx: &mut ViewContext<'_, Editor>) {}
+
+    fn select_prev(&self, cx: &mut ViewContext<'_, Editor>) {}
+
+    fn select_last(&self, cx: &mut ViewContext<'_, Editor>) {}
+
+    fn visible(&self) -> bool {
+        self.visible
+    }
+
+    fn render(
+        &self,
+        _: DisplayPoint,
+        style: &EditorStyle,
+        cx: &mut ViewContext<'_, Editor>,
+    ) -> (DisplayPoint, AnyElement<Editor>) {
+        (dbg!(self.exact_point.clone()), self.menu.clone().render())
+    }
+}
+
+#[derive(Clone)]
 struct CodeActionsMenu {
     actions: Arc<[CodeAction]>,
     buffer: Model<Buffer>,
@@ -2075,6 +2112,10 @@ impl Editor {
                     dispatch_context.insert("menu");
                     dispatch_context.insert("showing_code_actions")
                 }
+                Some(ContextMenu::MouseContextMenu(_)) => {
+                    dispatch_context.insert("menu");
+                    dispatch_context.insert("showing_mouse_context_menu")
+                }
                 None => {}
             }
         }
@@ -2327,7 +2368,7 @@ impl Editor {
             let mut context_menu = self.context_menu.write();
             let completion_menu = match context_menu.as_ref() {
                 Some(ContextMenu::Completions(menu)) => Some(menu),
-
+                Some(ContextMenu::MouseContextMenu(menu)) => None,
                 _ => {
                     *context_menu = None;
                     None
@@ -2479,7 +2520,12 @@ impl Editor {
     }
 
     fn select(&mut self, phase: SelectPhase, cx: &mut ViewContext<Self>) {
-        self.hide_context_menu(cx);
+        if !matches!(
+            *self.context_menu.read(),
+            Some(ContextMenu::MouseContextMenu(_))
+        ) {
+            self.hide_context_menu(cx);
+        }
 
         match phase {
             SelectPhase::Begin {
@@ -4509,12 +4555,10 @@ impl Editor {
     //     }
 
     pub fn context_menu_visible(&self) -> bool {
-        self.mouse_context_menu.is_some()
-            || self
-                .context_menu
-                .read()
-                .as_ref()
-                .map_or(false, |menu| menu.visible())
+        self.context_menu
+            .read()
+            .as_ref()
+            .map_or(false, |menu| menu.visible())
     }
 
     pub fn render_context_menu(
@@ -9277,6 +9321,7 @@ impl Editor {
         self.blink_manager.update(cx, BlinkManager::disable);
         self.buffer
             .update(cx, |buffer, cx| buffer.remove_active_selections(cx));
+
         self.hide_context_menu(cx);
         hide_hover(self, cx);
         cx.emit(Event::Blurred);

@@ -7,6 +7,17 @@ pub enum ContextMenuItem {
     Separator,
 }
 
+impl Clone for ContextMenuItem {
+    fn clone(&self) -> Self {
+        match self {
+            ContextMenuItem::Header(name) => ContextMenuItem::Header(name.clone()),
+            ContextMenuItem::Entry(label, action) => {
+                ContextMenuItem::Entry(label.clone(), action.boxed_clone())
+            }
+            ContextMenuItem::Separator => ContextMenuItem::Separator,
+        }
+    }
+}
 impl ContextMenuItem {
     fn to_list_item<V: 'static>(self) -> ListItem {
         match self {
@@ -32,7 +43,7 @@ impl ContextMenuItem {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct ContextMenu {
     items: Vec<ContextMenuItem>,
 }
