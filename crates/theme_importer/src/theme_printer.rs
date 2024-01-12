@@ -379,7 +379,7 @@ impl<'a> Debug for PlayerColorsPrinter<'a> {
             .field(&VecPrinter(
                 &self
                     .0
-                     .0
+                    .all()
                     .iter()
                     .map(|player_color| PlayerColorPrinter(player_color))
                     .collect(),

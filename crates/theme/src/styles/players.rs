@@ -17,7 +17,7 @@ pub struct PlayerColor {
 /// The rest of the default colors crisscross back and forth on the
 /// color wheel so that the colors are as distinct as possible.
 #[derive(Clone, Deserialize)]
-pub struct PlayerColors(pub Vec<PlayerColor>);
+pub struct PlayerColors(Vec<PlayerColor>);
 
 impl Default for PlayerColors {
     /// Don't use this!
@@ -29,6 +29,9 @@ impl Default for PlayerColors {
 }
 
 impl PlayerColors {
+    pub fn new(colors: Vec<PlayerColor>) -> Self {
+        Self(colors)
+    }
     pub fn dark() -> Self {
         Self(vec![
             PlayerColor {
@@ -123,6 +126,10 @@ impl PlayerColors {
 impl PlayerColors {
     pub fn local(&self) -> PlayerColor {
         *self.0.first().unwrap()
+    }
+
+    pub fn all(&self) -> &[PlayerColor] {
+        &self.0
     }
 
     pub fn absent(&self) -> PlayerColor {

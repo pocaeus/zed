@@ -167,7 +167,7 @@ impl Zed1ThemeConverter {
             });
         }
 
-        Ok(PlayerColors(player_colors))
+        Ok(PlayerColors::new(player_colors))
     }
 
     fn convert_theme_colors(&self) -> Result<ThemeColorsRefinement> {
