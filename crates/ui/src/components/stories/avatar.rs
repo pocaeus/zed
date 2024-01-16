@@ -19,11 +19,11 @@ impl Render for AvatarStory {
             ))
             .child(
                 Avatar::new("https://avatars.githubusercontent.com/u/326587?v=4")
-                    .availability_indicator(true),
+                    .status_indicator(true),
             )
             .child(
                 Avatar::new("https://avatars.githubusercontent.com/u/326587?v=4")
-                    .availability_indicator(false),
+                    .status_indicator(false),
             )
     }
 }

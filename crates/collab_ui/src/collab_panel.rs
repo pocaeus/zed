@@ -2000,43 +2000,45 @@ impl CollabPanel {
         let busy = contact.busy || calling;
         let user_id = contact.user.id;
         let github_login = SharedString::from(contact.user.github_login.clone());
-        let item =
-            ListItem::new(github_login.clone())
-                .indent_level(1)
-                .indent_step_size(px(20.))
-                .selected(is_selected)
-                .on_click(cx.listener(move |this, _, cx| this.call(user_id, cx)))
-                .child(
-                    h_flex()
-                        .w_full()
-                        .justify_between()
-                        .child(Label::new(github_login.clone()))
-                        .when(calling, |el| {
-                            el.child(Label::new("Calling").color(Color::Muted))
-                        })
-                        .when(!calling, |el| {
-                            el.child(
-                                IconButton::new("remove_contact", IconName::Close)
-                                    .icon_color(Color::Muted)
-                                    .visible_on_hover("")
-                                    .tooltip(|cx| Tooltip::text("Remove Contact", cx))
-                                    .on_click(cx.listener({
-                                        let github_login = github_login.clone();
-                                        move |this, _, cx| {
-                                            this.remove_contact(user_id, &github_login, cx);
-                                        }
-                                    })),
-                            )
-                        }),
-                )
-                .start_slot(
-                    // todo handle contacts with no avatar
-                    Avatar::new(contact.user.avatar_uri.clone())
-                        .availability_indicator(if online { Some(!busy) } else { None }),
-                )
-                .when(online && !busy, |el| {
-                    el.on_click(cx.listener(move |this, _, cx| this.call(user_id, cx)))
-                });
+        let item = ListItem::new(github_login.clone())
+            .indent_level(1)
+            .indent_step_size(px(20.))
+            .selected(is_selected)
+            .on_click(cx.listener(move |this, _, cx| this.call(user_id, cx)))
+            .child(
+                h_flex()
+                    .w_full()
+                    .justify_between()
+                    .child(Label::new(github_login.clone()))
+                    .when(calling, |el| {
+                        el.child(Label::new("Calling").color(Color::Muted))
+                    })
+                    .when(!calling, |el| {
+                        el.child(
+                            IconButton::new("remove_contact", IconName::Close)
+                                .icon_color(Color::Muted)
+                                .visible_on_hover("")
+                                .tooltip(|cx| Tooltip::text("Remove Contact", cx))
+                                .on_click(cx.listener({
+                                    let github_login = github_login.clone();
+                                    move |this, _, cx| {
+                                        this.remove_contact(user_id, &github_login, cx);
+                                    }
+                                })),
+                        )
+                    }),
+            )
+            .start_slot(
+                // todo handle contacts with no avatar
+                Avatar::new(contact.user.avatar_uri.clone()).status_indicator(if online {
+                    Some(!busy)
+                } else {
+                    None
+                }),
+            )
+            .when(online && !busy, |el| {
+                el.on_click(cx.listener(move |this, _, cx| this.call(user_id, cx)))
+            });
 
         div()
             .id(github_login.clone())

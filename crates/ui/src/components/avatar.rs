@@ -28,7 +28,7 @@ pub struct Avatar {
     image: Img,
     size: Option<Pixels>,
     border_color: Option<Hsla>,
-    is_available: Option<bool>,
+    status_indicator: Option<bool>,
 }
 
 impl RenderOnce for Avatar {
@@ -37,25 +37,31 @@ impl RenderOnce for Avatar {
             self = self.shape(AvatarShape::Circle);
         }
 
-        let size = self.size.unwrap_or_else(|| cx.rem_size());
+        let icon_size = self.size.unwrap_or_else(|| cx.rem_size());
+        let border_width = if self.border_color.is_some() {
+            px(3. * 2.)
+        } else {
+            px(0.)
+        };
+        let div_size = icon_size + border_width;
 
         div()
-            .size(size + px(2.))
+            .size(div_size)
             .map(|mut div| {
                 div.style().corner_radii = self.image.style().corner_radii.clone();
                 div
             })
             .when_some(self.border_color, |this, color| {
-                this.border().border_color(color)
+                this.border_3().border_color(color)
             })
             .child(
                 self.image
-                    .size(size)
+                    .size(icon_size)
                     .bg(cx.theme().colors().ghost_element_background),
             )
-            .children(self.is_available.map(|is_free| {
+            .children(self.status_indicator.map(|is_free| {
                 // HACK: non-integer sizes result in oval indicators.
-                let indicator_size = (size * 0.4).round();
+                let indicator_size = (icon_size * 0.4).round();
 
                 div()
                     .absolute()
@@ -77,7 +83,7 @@ impl Avatar {
     pub fn new(src: impl Into<ImageSource>) -> Self {
         Avatar {
             image: img(src),
-            is_available: None,
+            status_indicator: None,
             border_color: None,
             size: None,
         }
@@ -122,8 +128,9 @@ impl Avatar {
         self
     }
 
-    pub fn availability_indicator(mut self, is_available: impl Into<Option<bool>>) -> Self {
-        self.is_available = is_available.into();
+    /// A Some(true) indicates a green dot, and a Some(false) indicates a red dot.
+    pub fn status_indicator(mut self, is_available: impl Into<Option<bool>>) -> Self {
+        self.status_indicator = is_available.into();
         self
     }
 

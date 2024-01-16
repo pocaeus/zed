@@ -478,12 +478,9 @@ impl CollabTitlebarItem {
             .child(
                 Avatar::new(user.avatar_uri.clone())
                     .grayscale(!is_present)
-                    .border_color(if is_speaking {
-                        cx.theme().status().info_border
-                    } else if is_muted {
-                        cx.theme().status().error_border
-                    } else {
-                        Hsla::default()
+                    .when(is_muted, |avatar| avatar.status_indicator(false))
+                    .when(is_speaking, |avatar| {
+                        avatar.border_color(cx.theme().status().info_border)
                     }),
             )
             .children(followers.iter().filter_map(|follower_peer_id| {
