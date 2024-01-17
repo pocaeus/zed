@@ -10,7 +10,7 @@ use crate::{
         User, UserId,
     },
     executor::Executor,
-    AppState, Result,
+    AppState, Error, Result,
 };
 use anyhow::anyhow;
 use async_tungstenite::tungstenite::{
@@ -40,6 +40,7 @@ use futures::{
 use lazy_static::lazy_static;
 use prometheus::{register_int_gauge, IntGauge};
 use rpc::{
+    error_code,
     proto::{
         self, Ack, AnyTypedEnvelope, EntityMessage, EnvelopedMessage, LiveKitConnectionInfo,
         RequestMessage, ShareProject, UpdateChannelBufferCollaborators,
@@ -543,10 +544,15 @@ impl Server {
                         }
                     }
                     Err(error) => {
+                        let code = match &error {
+                            Error::Internal(err) => error_code(err),
+                            _ => None,
+                        };
                         peer.respond_with_error(
                             receipt,
                             proto::Error {
                                 message: error.to_string(),
+                                code: code.map(|c| c as i32),
                             },
                         )?;
                         Err(error)

@@ -1184,7 +1184,7 @@ impl Database {
         Ok(channel::Entity::find_by_id(channel_id)
             .one(&*tx)
             .await?
-            .ok_or_else(|| anyhow!("no such channel"))?)
+            .ok_or_else(|| rpc::error(proto::ErrorCode::NoSuchChannel))?)
     }
 
     pub(crate) async fn get_or_create_channel_room(

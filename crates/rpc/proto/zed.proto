@@ -197,7 +197,13 @@ message Ack {}
 
 message Error {
     string message = 1;
+    optional ErrorCode code = 2;
 }
+
+enum ErrorCode {
+    NoSuchChannel = 0;
+}
+
 
 message Test {
     uint64 id = 1;

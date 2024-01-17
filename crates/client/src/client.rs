@@ -693,6 +693,7 @@ impl Client {
                     receipt,
                     proto::Error {
                         message: format!("{:?}", error),
+                        code: rpc::error_code(error).map(|c| c as i32),
                     },
                 )?;
                 Err(error)

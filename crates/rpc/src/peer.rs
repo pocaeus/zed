@@ -1,3 +1,5 @@
+use crate::received_error;
+
 use super::{
     proto::{self, AnyTypedEnvelope, EnvelopedMessage, MessageStream, PeerId, RequestMessage},
     Connection,
@@ -423,11 +425,15 @@ impl Peer {
             let (response, _barrier) = rx.await.map_err(|_| anyhow!("connection was closed"))?;
 
             if let Some(proto::envelope::Payload::Error(error)) = &response.payload {
-                Err(anyhow!(
-                    "RPC request {} failed - {}",
-                    T::NAME,
-                    error.message
-                ))
+                if let Some(code) = error.code.and_then(|code| proto::ErrorCode::from_i32(code)) {
+                    Err(received_error(code, T::NAME))
+                } else {
+                    Err(anyhow!(
+                        "RPC request {} failed - {}",
+                        T::NAME,
+                        error.message
+                    ))
+                }
             } else {
                 Ok(TypedEnvelope {
                     message_id: response.id,
@@ -518,6 +524,7 @@ impl Peer {
         let connection = self.connection_state(envelope.sender_id())?;
         let response = proto::Error {
             message: format!("message {} was not handled", envelope.payload_type_name()),
+            code: None,
         };
         let message_id = connection
             .next_message_id
@@ -694,6 +701,7 @@ mod tests {
                         server_to_client_conn_id,
                         proto::Error {
                             message: "message 1".to_string(),
+                            code: None,
                         },
                     )
                     .unwrap();
@@ -702,6 +710,7 @@ mod tests {
                         server_to_client_conn_id,
                         proto::Error {
                             message: "message 2".to_string(),
+                            code: None,
                         },
                     )
                     .unwrap();
@@ -799,6 +808,7 @@ mod tests {
                         server_to_client_conn_id,
                         proto::Error {
                             message: "message 1".to_string(),
+                            code: None,
                         },
                     )
                     .unwrap();
@@ -807,6 +817,7 @@ mod tests {
                         server_to_client_conn_id,
                         proto::Error {
                             message: "message 2".to_string(),
+                            code: None,
                         },
                     )
                     .unwrap();
