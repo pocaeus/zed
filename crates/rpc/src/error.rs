@@ -20,6 +20,10 @@ pub fn error_code(e: &anyhow::Error) -> Option<proto::ErrorCode> {
     e.downcast_ref::<RPCError>().map(|e| e.code)
 }
 
+pub fn user_visible_message(e: &anyhow::Error) -> String {
+
+}
+
 #[derive(Clone, Debug)]
 struct RPCError {
     request: Option<String>,
