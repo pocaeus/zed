@@ -45,7 +45,7 @@ use rpc::{
         self, Ack, AnyTypedEnvelope, EntityMessage, EnvelopedMessage, LiveKitConnectionInfo,
         RequestMessage, ShareProject, UpdateChannelBufferCollaborators,
     },
-    Connection, ConnectionId, Peer, Receipt, TypedEnvelope,
+    Connection, ConnectionId, ErrorCode, Peer, Receipt, TypedEnvelope,
 };
 use serde::{Serialize, Serializer};
 use std::{
@@ -546,13 +546,13 @@ impl Server {
                     Err(error) => {
                         let code = match &error {
                             Error::Internal(err) => error_code(err),
-                            _ => None,
+                            _ => ErrorCode::Internal,
                         };
                         peer.respond_with_error(
                             receipt,
                             proto::Error {
                                 message: error.to_string(),
-                                code: code.map(|c| c as i32),
+                                code: code as i32,
                             },
                         )?;
                         Err(error)

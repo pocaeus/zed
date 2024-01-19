@@ -425,15 +425,11 @@ impl Peer {
             let (response, _barrier) = rx.await.map_err(|_| anyhow!("connection was closed"))?;
 
             if let Some(proto::envelope::Payload::Error(error)) = &response.payload {
-                if let Some(code) = error.code.and_then(|code| proto::ErrorCode::from_i32(code)) {
-                    Err(received_error(code, T::NAME))
-                } else {
-                    Err(anyhow!(
-                        "RPC request {} failed - {}",
-                        T::NAME,
-                        error.message
-                    ))
-                }
+                Err(received_error(
+                    proto::ErrorCode::from_i32(error.code).unwrap_or(proto::ErrorCode::Internal),
+                    T::NAME,
+                    &error.message,
+                ))
             } else {
                 Ok(TypedEnvelope {
                     message_id: response.id,
@@ -565,7 +561,6 @@ mod tests {
     use crate::TypedEnvelope;
     use async_tungstenite::tungstenite::Message as WebSocketMessage;
     use gpui::TestAppContext;
-    use zstd::zstd_safe::ErrorCode;
 
     fn init_logger() {
         if std::env::var("RUST_LOG").is_ok() {

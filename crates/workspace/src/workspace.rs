@@ -14,7 +14,8 @@ mod workspace_settings;
 use anyhow::{anyhow, Context as _, Result};
 use call::ActiveCall;
 use client::{
-    proto::{self, PeerId},
+    error_simple,
+    proto::{self, ErrorCode, PeerId},
     Client, Status, TypedEnvelope, UserStore,
 };
 use collections::{hash_map, HashMap, HashSet};
@@ -29,9 +30,9 @@ use gpui::{
     AnyWeakView, AppContext, AsyncAppContext, AsyncWindowContext, BorrowWindow, Bounds, Context,
     Div, DragMoveEvent, Element, Entity, EntityId, EventEmitter, FocusHandle, FocusableView,
     GlobalPixels, InteractiveElement, IntoElement, KeyContext, LayoutId, ManagedView, Model,
-    ModelContext, ParentElement, PathPromptOptions, Pixels, Point, PromptLevel, Render, Size,
-    Styled, Subscription, Task, View, ViewContext, VisualContext, WeakView, WindowBounds,
-    WindowContext, WindowHandle, WindowOptions,
+    ModelContext, ParentElement, PathPromptOptions, Pixels, Point, PromptLevel, Render,
+    SharedString, Size, Styled, Subscription, Task, View, ViewContext, VisualContext, WeakView,
+    WindowBounds, WindowContext, WindowHandle, WindowOptions,
 };
 use item::{FollowableItem, FollowableItemHandle, Item, ItemHandle, ItemSettings, ProjectItem};
 use itertools::Itertools;
@@ -3950,10 +3951,10 @@ async fn join_channel_internal(
             | Status::Reconnecting
             | Status::Reauthenticating => continue,
             Status::Connected { .. } => break 'outer,
-            Status::SignedOut => return Err(anyhow!("not signed in")),
-            Status::UpgradeRequired => return Err(anyhow!("zed is out of date")),
+            Status::SignedOut => return Err(error_simple(ErrorCode::SignedOut)),
+            Status::UpgradeRequired => return Err(error_simple(ErrorCode::UpgradeRequired)),
             Status::ConnectionError | Status::ConnectionLost | Status::ReconnectionError { .. } => {
-                return Err(anyhow!("zed is offline"))
+                return Err(error_simple(ErrorCode::Disconnected))
             }
         }
     }
@@ -4026,14 +4027,22 @@ pub fn join_channel(
             if let Some(active_window) = active_window {
                 active_window
                     .update(&mut cx, |_, cx| {
-                        let message = match rpc::cause(err) {
-                            NoSuchChannel => "Sorry! Channel not found.\n\nPlease check the link you clicked and try again.",
-                            Disconnected => "Failed to join channel:\n\nPlease check your internet connection and try again.",
-                            _ => "Failed to join channel.\n\n{}\n\nPlease try again."
+                        let message:SharedString = match client::error_code(&err) {
+                            ErrorCode::SignedOut => {
+                                "Failed to join channel\n\nPlease sign in to continue.".into()
+                            },
+                            ErrorCode::UpgradeRequired => {
+                                "Failed to join channel\n\nPlease update to the latest version of Zed to continue.".into()
+                            },
+                            ErrorCode::NoSuchChannel => {
+                                "Failed to find channel\n\nPlease check the link and try again.".into()
+                            },
+                            ErrorCode::Disconnected => "Failed to join channel:\n\nPlease check your internet connection and try again.".into(),
+                            _ => format!("Failed to join channel\n\n{}\n\nPlease try again.", err).into(),
                         };
                         cx.prompt(
                             PromptLevel::Critical,
-                            message,
+                            &message,
                             &["Ok"],
                         )
                     })?

@@ -204,6 +204,9 @@ enum ErrorCode {
     Internal = 0;
     NoSuchChannel = 1;
     Disconnected = 2;
+    SignedOut = 3;
+    UpgradeRequired = 4;
+    Forbidden = 5;
 }
 
 message Test {
