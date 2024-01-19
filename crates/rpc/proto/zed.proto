@@ -198,6 +198,7 @@ message Ack {}
 message Error {
     string message = 1;
     ErrorCode code = 2;
+    repeated string tags = 3;
 }
 
 enum ErrorCode {
@@ -207,6 +208,7 @@ enum ErrorCode {
     SignedOut = 3;
     UpgradeRequired = 4;
     Forbidden = 5;
+    WrongReleaseChannel = 6;
 }
 
 message Test {
