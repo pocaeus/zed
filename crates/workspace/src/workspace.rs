@@ -4026,9 +4026,14 @@ pub fn join_channel(
             if let Some(active_window) = active_window {
                 active_window
                     .update(&mut cx, |_, cx| {
+                        let message = match rpc::cause(err) {
+                            NoSuchChannel => "Sorry! Channel not found.\n\nPlease check the link you clicked and try again.",
+                            Disconnected => "Failed to join channel:\n\nPlease check your internet connection and try again.",
+                            _ => "Failed to join channel.\n\n{}\n\nPlease try again."
+                        };
                         cx.prompt(
                             PromptLevel::Critical,
-                            &format!("Failed to join channel: {}", err),
+                            message,
                             &["Ok"],
                         )
                     })?

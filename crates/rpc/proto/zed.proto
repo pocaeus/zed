@@ -197,13 +197,14 @@ message Ack {}
 
 message Error {
     string message = 1;
-    optional ErrorCode code = 2;
+    ErrorCode code = 2;
 }
 
 enum ErrorCode {
-    NoSuchChannel = 0;
+    Internal = 0;
+    NoSuchChannel = 1;
+    Disconnected = 2;
 }
-
 
 message Test {
     uint64 id = 1;

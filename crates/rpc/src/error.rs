@@ -16,12 +16,10 @@ pub fn received_error(c: proto::ErrorCode, request: &str) -> anyhow::Error {
     .into()
 }
 
-pub fn error_code(e: &anyhow::Error) -> Option<proto::ErrorCode> {
-    e.downcast_ref::<RPCError>().map(|e| e.code)
-}
-
-pub fn user_visible_message(e: &anyhow::Error) -> String {
-
+pub fn cause(e: &anyhow::Error) -> proto::ErrorCode {
+    e.downcast_ref::<RPCError>()
+        .map(|e| e.code)
+        .unwrap_or(proto::ErrorCode::Internal)
 }
 
 #[derive(Clone, Debug)]

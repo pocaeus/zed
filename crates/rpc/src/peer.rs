@@ -524,7 +524,7 @@ impl Peer {
         let connection = self.connection_state(envelope.sender_id())?;
         let response = proto::Error {
             message: format!("message {} was not handled", envelope.payload_type_name()),
-            code: None,
+            code: 0,
         };
         let message_id = connection
             .next_message_id
@@ -565,6 +565,7 @@ mod tests {
     use crate::TypedEnvelope;
     use async_tungstenite::tungstenite::Message as WebSocketMessage;
     use gpui::TestAppContext;
+    use zstd::zstd_safe::ErrorCode;
 
     fn init_logger() {
         if std::env::var("RUST_LOG").is_ok() {
@@ -701,7 +702,7 @@ mod tests {
                         server_to_client_conn_id,
                         proto::Error {
                             message: "message 1".to_string(),
-                            code: None,
+                            code: 0,
                         },
                     )
                     .unwrap();
@@ -710,7 +711,7 @@ mod tests {
                         server_to_client_conn_id,
                         proto::Error {
                             message: "message 2".to_string(),
-                            code: None,
+                            code: 0,
                         },
                     )
                     .unwrap();
@@ -808,7 +809,7 @@ mod tests {
                         server_to_client_conn_id,
                         proto::Error {
                             message: "message 1".to_string(),
-                            code: None,
+                            code: 0,
                         },
                     )
                     .unwrap();
@@ -817,7 +818,7 @@ mod tests {
                         server_to_client_conn_id,
                         proto::Error {
                             message: "message 2".to_string(),
-                            code: None,
+                            code: 0,
                         },
                     )
                     .unwrap();
