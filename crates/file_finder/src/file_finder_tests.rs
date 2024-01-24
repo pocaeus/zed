@@ -114,7 +114,7 @@ async fn test_absolute_paths(cx: &mut TestAppContext) {
         .await;
     picker.update(cx, |picker, _| {
         assert_eq!(
-            collect_search_results(picker),
+            collect_search_matches(picker).search_only(),
             vec![PathBuf::from("a/b/file2.txt")],
             "Matching abs path should be the only match"
         )
@@ -136,7 +136,7 @@ async fn test_absolute_paths(cx: &mut TestAppContext) {
         .await;
     picker.update(cx, |picker, _| {
         assert_eq!(
-            collect_search_results(picker),
+            collect_search_matches(picker).search_only(),
             Vec::<PathBuf>::new(),
             "Mismatching abs path should produce no matches"
         )
@@ -169,7 +169,7 @@ async fn test_complex_path(cx: &mut TestAppContext) {
     picker.update(cx, |picker, _| {
         assert_eq!(picker.delegate.matches.len(), 1);
         assert_eq!(
-            collect_search_results(picker),
+            collect_search_matches(picker).search_only(),
             vec![PathBuf::from("其他/S数据表格/task.xlsx")],
         )
     });
@@ -1007,6 +1007,71 @@ async fn test_search_preserves_history_items(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
+async fn test_search_sorts_history_items(cx: &mut gpui::TestAppContext) {
+    let app_state = init_test(cx);
+
+    app_state
+        .fs
+        .as_fake()
+        .insert_tree(
+            "/root",
+            json!({
+                "src": {
+                    "first": "// First file",
+                    "second": "// Second file",
+                    "third": "// Third file",
+                    "fourth": "// Fourth file",
+                    "www_another_ststst": "// More query matches, but closer to the end of the list due to the name",
+                    "www_end_of_the_liststst": "// One more, same amount of query matches as above",
+                }
+            }),
+        )
+        .await;
+
+    let project = Project::test(app_state.fs.clone(), ["/root".as_ref()], cx).await;
+    let (workspace, cx) = cx.add_window_view(|cx| Workspace::test_new(project, cx));
+    // generate some history to select from
+    open_close_queried_buffer("first", 1, "first", &workspace, cx).await;
+    open_close_queried_buffer("sec", 1, "second", &workspace, cx).await;
+    open_close_queried_buffer("third", 1, "third", &workspace, cx).await;
+    open_close_queried_buffer("sec", 1, "second", &workspace, cx).await;
+    open_close_queried_buffer(
+        "www_another_ststst",
+        1,
+        "www_another_ststst",
+        &workspace,
+        cx,
+    )
+    .await;
+
+    let finder = open_file_picker(&workspace, cx);
+    let query = "st";
+    finder
+        .update(cx, |finder, cx| {
+            finder.delegate.update_matches(query.to_string(), cx)
+        })
+        .await;
+    finder.update(cx, |finder, _| {
+        let search_matches = collect_search_matches(finder);
+        assert_eq!(
+            search_matches.history,
+            vec![
+                PathBuf::from("src/www_another_ststst"),
+                PathBuf::from("src/first"),
+            ],
+        );
+        assert_eq!(
+            search_matches.search,
+            vec![
+                PathBuf::from("src/third"),
+                PathBuf::from("src/fourth"),
+                PathBuf::from("src/www_end_of_the_liststst"),
+            ],
+        );
+    });
+}
+
+#[gpui::test]
 async fn test_history_items_vs_very_good_external_match(cx: &mut gpui::TestAppContext) {
     let app_state = init_test(cx);
 
@@ -1124,7 +1189,8 @@ async fn open_close_queried_buffer(
         assert_eq!(
             finder.delegate.matches.len(),
             expected_matches,
-            "Unexpected number of matches found for query {input}"
+            "Unexpected number of matches found for query `{input}`, matches: {:?}",
+            finder.delegate.matches
         );
         finder.delegate.history_items.clone()
     });
@@ -1137,7 +1203,7 @@ async fn open_close_queried_buffer(
         let active_editor_title = active_editor.read(cx).title(cx);
         assert_eq!(
             expected_editor_title, active_editor_title,
-            "Unexpected editor title for query {input}"
+            "Unexpected editor title for query `{input}`"
         );
     });
 
@@ -1210,18 +1276,49 @@ fn active_file_picker(
     })
 }
 
-fn collect_search_results(picker: &Picker<FileFinderDelegate>) -> Vec<PathBuf> {
+#[derive(Debug)]
+struct SearchEntries {
+    history: Vec<PathBuf>,
+    search: Vec<PathBuf>,
+}
+
+impl SearchEntries {
+    #[track_caller]
+    fn search_only(self) -> Vec<PathBuf> {
+        assert!(
+            self.history.is_empty(),
+            "Should have no history matches, but got: {:?}",
+            self.history
+        );
+        self.search
+    }
+}
+
+fn collect_search_matches(picker: &Picker<FileFinderDelegate>) -> SearchEntries {
     let matches = &picker.delegate.matches;
-    assert!(
-        matches.history.is_empty(),
-        "Should have no history matches, but got: {:?}",
-        matches.history
-    );
-    let mut results = matches
-        .search
-        .iter()
-        .map(|path_match| Path::new(path_match.path_prefix.as_ref()).join(&path_match.path))
-        .collect::<Vec<_>>();
-    results.sort();
-    results
+    SearchEntries {
+        history: matches
+            .history
+            .iter()
+            .map(|(history_path, path_match)| {
+                path_match
+                    .as_ref()
+                    .map(|path_match| {
+                        Path::new(path_match.path_prefix.as_ref()).join(&path_match.path)
+                    })
+                    .unwrap_or_else(|| {
+                        history_path
+                            .absolute
+                            .as_deref()
+                            .unwrap_or_else(|| Path::new(""))
+                            .join(&history_path.project.path)
+                    })
+            })
+            .collect(),
+        search: matches
+            .search
+            .iter()
+            .map(|path_match| Path::new(path_match.path_prefix.as_ref()).join(&path_match.path))
+            .collect(),
+    }
 }

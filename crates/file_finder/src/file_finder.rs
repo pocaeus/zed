@@ -182,7 +182,7 @@ impl Matches {
         let matching_history_paths = matching_history_item_paths(history_items, query);
         new_search_matches
             .retain(|path_match| !matching_history_paths.contains_key(&path_match.path));
-        let history_items_to_show = history_items
+        let mut history_items_to_show = history_items
             .iter()
             .filter_map(|history_item| {
                 Some((
@@ -195,6 +195,8 @@ impl Matches {
                 ))
             })
             .collect::<Vec<_>>();
+        history_items_to_show
+            .sort_by(|(_, path_match_a), (_, path_match_b)| path_match_a.cmp(path_match_b));
         self.history = history_items_to_show;
         if extend_old_matches {
             self.search
