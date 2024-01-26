@@ -111,13 +111,9 @@ async fn get_cached_server_binary(container_dir: PathBuf) -> Option<LanguageServ
         let mut entries = fs::read_dir(&container_dir).await?;
         while let Some(entry) = entries.next().await {
             let entry = entry?;
-            if entry.file_type().await?.is_file()
-                && entry
-                    .file_name()
-                    .to_str()
-                    .map_or(false, |name| name == "haskell-language-server-wrapper")
-            {
-                last_binary_path = Some(entry.path());
+            let maybe_binary_path = entry.path().join("bin/haskell-language-server-wrapper");
+            if maybe_binary_path.exists() {
+                last_binary_path = Some(maybe_binary_path);
             }
         }
 
