@@ -32,6 +32,7 @@ mod php;
 mod prisma;
 mod purescript;
 mod python;
+mod racket;
 mod ruby;
 mod rust;
 mod svelte;
@@ -265,7 +266,7 @@ pub fn init(
         ],
     );
     language("scheme", vec![]);
-    language("racket", vec![]);
+    language("racket", vec![Arc::new(racket::RacketLanguageServer {})]);
     language("lua", vec![Arc::new(lua::LuaLspAdapter)]);
     language(
         "yaml",
