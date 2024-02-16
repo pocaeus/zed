@@ -40,8 +40,8 @@ impl LspAdapter for RacketLanguageServer {
         _: &dyn LspAdapterDelegate,
     ) -> Option<LanguageServerBinary> {
         Some(LanguageServerBinary {
-            path: "racket-langserver".into(),
-            arguments: vec![],
+            path: "racket".into(),
+            arguments: vec!["-l".into(), "racket-langserver".into()],
         })
     }
 
